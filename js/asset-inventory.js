@@ -216,6 +216,7 @@ function applyFilters() {
       changes.push(`purchaseDate: ${before.purchaseDate || "-"} → ${after.purchaseDate || "-"}`);
     }
      return changes.length > 0 ? changes.join("; ") : "No field-level changes";
+  }
      try {
       const assetDoc = await getDoc(doc(db, "assets", assetId));
 
