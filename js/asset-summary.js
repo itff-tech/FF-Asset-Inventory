@@ -1,25 +1,9 @@
 import {
-  getFirestore,
   collection,
   getDocs
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAspahfUUGnBzh0mh6U53evGQzWQP956xQ",
-  authDomain: "ffassetmanager.firebaseapp.com",
-  projectId: "ffassetmanager",
-  storageBucket: "ffassetmanager.appspot.com",
-  messagingSenderId: "803858971008",
-  appId: "1:803858971008:web:72d69ddce6cbc85010a965"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth();
-
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { auth, db } from "../firebase-client.js";
 const summaryTableBody = document.getElementById("summaryTableBody");
 const typeFilter = document.getElementById("typeFilter");
 
