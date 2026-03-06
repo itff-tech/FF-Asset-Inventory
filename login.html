@@ -8,9 +8,6 @@
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 </head>
 <body class="bg-[#F3F4F6] flex items-center justify-center min-h-screen">
 
@@ -68,18 +65,9 @@
     <div id="error" class="text-red-500 text-sm mt-3 text-center hidden"></div>
   </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAspahfUUGnBzh0mh6U53evGQzWQP956xQ",
-    authDomain: "ffassetmanager.firebaseapp.com",
-    projectId: "ffassetmanager",
-    storageBucket: "ffassetmanager.appspot.com",
-    messagingSenderId: "803858971008",
-    appId: "1:803858971008:web:72d69ddce6cbc85010a965"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-
+<script type="module">
+  import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { auth } from "./firebase-client.js";
   const loginBtn = document.getElementById("loginBtn");
   const loader   = document.getElementById("loader");
   const errorDiv = document.getElementById("error");
@@ -90,8 +78,7 @@
 
     loader.classList.remove("hidden");
     loginBtn.disabled = true;
-
-    auth.signInWithEmailAndPassword(email, password)
+      signInWithEmailAndPassword(auth, email, password)
       .then(() => {
         window.location.href = "add-asset.html";
       })
@@ -112,22 +99,17 @@
       });
   });
 
-  const pwd       = document.getElementById("password");
-  const togglePwd = document.getElementById("togglePwd");
-  const eyeOpen   = document.getElementById("eyeOpen");
-  const eyeOff    = document.getElementById("eyeOff");
-
-  togglePwd.addEventListener("click", () => {
+   // Show / Hide password
+  const pwd = document.getElementById("password");
+  const toggle = document.getElementById("togglePwd");
+  const eyeOpen = document.getElementById("eyeOpen");
+  const eyeOff  = document.getElementById("eyeOff");
+  
+    toggle.addEventListener("click", () => {
     const isHidden = pwd.type === "password";
     pwd.type = isHidden ? "text" : "password";
-    eyeOpen.classList.toggle("hidden", !isHidden);
-    eyeOff.classList.toggle("hidden", isHidden);
-  });
-
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      window.location.href = "add-asset.html";
-    }
+    eyeOpen.classList.toggle("hidden", isHidden);
+    eyeOff.classList.toggle("hidden", !isHidden);
   });
 </script>
 </body>
