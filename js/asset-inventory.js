@@ -5,8 +5,11 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-  getDoc
+  getDoc,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 import { db } from "../firebase-client.js";
 const assetsCollection = collection(db, "assets");
 
@@ -14,12 +17,20 @@ let allAssets = [];
 let currentPage = 1;
 const rowsPerPage = 25;
 
+let currentEditingAssetId = null;
+let currentEditingAssetData = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const tableBody = document.getElementById("tableBody");
   const searchInput = document.getElementById("searchInput");
   const statusFilter = document.getElementById("statusFilter");
   const typeFilter = document.getElementById("typeFilter");
   const resetBtn = document.getElementById("resetFilters");
+
+  const editModal = document.getElementById("editAssetModal");
+  const editForm = document.getElementById("editAssetForm");
+  const closeEditModalBtn = document.getElementById("closeEditModal");
+  const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
   // 🔄 Load Assets
   async function loadAssets() {
@@ -60,30 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 🔍 Filter assets
-function applyFilters() {
-  const searchTerm = searchInput.value.toLowerCase();
-  const status = statusFilter.value.toLowerCase();
-  const type = typeFilter?.value.toLowerCase();
+  function applyFilters() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const status = statusFilter.value.toLowerCase();
+    const type = typeFilter?.value.toLowerCase();
 
-  const filtered = allAssets.filter(asset => {
-    const matchesSearch =
-      asset.assetId?.toLowerCase().includes(searchTerm) ||
-      asset.model?.toLowerCase().includes(searchTerm) ||
-      asset.serialNumber?.toLowerCase().includes(searchTerm) ||
-      asset.type?.toLowerCase().includes(searchTerm) ||
-      asset.AllocatedTo?.toLowerCase().includes(searchTerm);
+    const filtered = allAssets.filter(asset => {
+      const matchesSearch =
+        asset.assetId?.toLowerCase().includes(searchTerm) ||
+        asset.model?.toLowerCase().includes(searchTerm) ||
+        asset.serialNumber?.toLowerCase().includes(searchTerm) ||
+        asset.type?.toLowerCase().includes(searchTerm) ||
+        asset.AllocatedTo?.toLowerCase().includes(searchTerm);
 
-    const matchesStatus = !status || asset.status?.toLowerCase() === status;
-    const matchesType = !type || asset.type?.toLowerCase() === type;
+      const matchesStatus = !status || asset.status?.toLowerCase() === status;
+      const matchesType = !type || asset.type?.toLowerCase() === type;
 
-    return matchesSearch && matchesStatus && matchesType;
-  });
+      return matchesSearch && matchesStatus && matchesType;
+    });
 
-  currentPage = 1;
-  renderTable(filtered);
-}
-
-
+    currentPage = 1;
+    renderTable(filtered);
+  }
 
   // 🖥️ Render assets with pagination
   function renderTable(data) {
@@ -109,13 +118,12 @@ function applyFilters() {
           }">${asset.status || "N/A"}</span>
         </td>
         <td class="border px-4 py-2 space-x-2 text-center">
-        <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${asset.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
-        <button class="allocate-btn text-green-500 hover:text-green-700" data-assetid="${asset.assetId}" title="Allocate"><i class="bi bi-arrow-left-right"></i></button>
-        <button class="return-btn text-yellow-500 hover:text-yellow-700" data-id="${asset.id}" title="Return"><i class="bi bi-arrow-counterclockwise"></i></button>
-        <button class="delete-btn text-red-500 hover:text-red-700" data-id="${asset.id}" title="Delete"><i class="bi bi-trash"></i></button>
-        <button class="history-btn text-gray-600 hover:text-black" data-id="${asset.id}" title="History"><i class="bi bi-clock-history"></i></button>
+          <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${asset.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
+          <button class="allocate-btn text-green-500 hover:text-green-700" data-assetid="${asset.assetId}" title="Allocate"><i class="bi bi-arrow-left-right"></i></button>
+          <button class="return-btn text-yellow-500 hover:text-yellow-700" data-id="${asset.id}" title="Return"><i class="bi bi-arrow-counterclockwise"></i></button>
+          <button class="delete-btn text-red-500 hover:text-red-700" data-id="${asset.id}" title="Delete"><i class="bi bi-trash"></i></button>
+          <button class="history-btn text-gray-600 hover:text-black" data-id="${asset.id}" title="History"><i class="bi bi-clock-history"></i></button>
         </td>
-
       `;
       tableBody.appendChild(row);
     });
@@ -151,49 +159,154 @@ function applyFilters() {
     }
   }
 
- async function returnAsset(assetId) {
-  if (confirm("Mark this asset as Available?")) {
-    const assetRef = doc(db, "assets", assetId);
-    const assetSnap = await getDoc(assetRef);
-    const assetData = assetSnap.data();
+  async function returnAsset(assetId) {
+    if (confirm("Mark this asset as Available?")) {
+      const assetRef = doc(db, "assets", assetId);
+      const assetSnap = await getDoc(assetRef);
+      const assetData = assetSnap.data();
 
-    const updatedHistory = [
-      ...(assetData.history || []),
-      {
-        date: new Date().toISOString(),
-        action: "Returned",
-        details: `Returned by ${assetData.AllocatedTo || "Unknown"}`
-      }
-    ];
+      const updatedHistory = [
+        ...(assetData.history || []),
+        {
+          date: new Date().toISOString(),
+          action: "Returned",
+          details: `Returned by ${assetData.AllocatedTo || "Unknown"}`
+        }
+      ];
 
-    await updateDoc(assetRef, {
-      status: "Available",
-      AllocatedTo: "",
-      allocationDate: "",
-      history: updatedHistory
-    });
+      await updateDoc(assetRef, {
+        status: "Available",
+        AllocatedTo: "",
+        allocationDate: "",
+        history: updatedHistory
+      });
 
-    alert("Asset returned successfully!");
-    loadAssets();
+      alert("Asset returned successfully!");
+      loadAssets();
+    }
   }
-}
+
+  function openEditModal() {
+    editModal.classList.remove("hidden");
+  }
+
+  function closeEditModal() {
+    editModal.classList.add("hidden");
+    editForm.reset();
+    currentEditingAssetId = null;
+    currentEditingAssetData = null;
+  }
+
+  function formatEditDetails(before, after) {
+    const changes = [];
+
+    if ((before.type || "") !== (after.type || "")) {
+      changes.push(`type: ${before.type || "-"} → ${after.type || "-"}`);
+    }
+    if ((before.model || "") !== (after.model || "")) {
+      changes.push(`model: ${before.model || "-"} → ${after.model || "-"}`);
+    }
+    if ((before.serialNumber || "") !== (after.serialNumber || "")) {
+      changes.push(`serialNumber: ${before.serialNumber || "-"} → ${after.serialNumber || "-"}`);
+    }
+    if ((before.AllocatedTo || "") !== (after.AllocatedTo || "")) {
+      changes.push(`AllocatedTo: ${before.AllocatedTo || "-"} → ${after.AllocatedTo || "-"}`);
+    }
+    if ((before.purchaseDate || "") !== (after.purchaseDate || "")) {
+      changes.push(`purchaseDate: ${before.purchaseDate || "-"} → ${after.purchaseDate || "-"}`);
+    }
+
+    return changes.length > 0 ? changes.join("; ") : "No field-level changes";
+  }
 
   async function editAsset(assetId) {
-    const assetDoc = await getDoc(doc(db, "assets", assetId));
-    const assetData = assetDoc.data();
+    try {
+      const assetDoc = await getDoc(doc(db, "assets", assetId));
 
-    const newName = prompt("Edit Asset Name:", assetData.name || "");
-    const newType = prompt("Edit Asset Type:", assetData.type || "");
-    const newModel = prompt("Edit Asset Model:", assetData.model || "");
+      if (!assetDoc.exists()) {
+        alert("Asset not found.");
+        return;
+      }
 
-    if (newName !== null && newType !== null && newModel !== null) {
-      await updateDoc(doc(db, "assets", assetId), {
-        name: newName,
-        type: newType,
-        model: newModel
+      const assetData = assetDoc.data();
+      currentEditingAssetId = assetId;
+      currentEditingAssetData = assetData;
+
+      document.getElementById("editAssetId").value = assetData.assetId || "";
+      document.getElementById("editType").value = assetData.type || "";
+      document.getElementById("editModel").value = assetData.model || "";
+      document.getElementById("editSerialNumber").value = assetData.serialNumber || "";
+      document.getElementById("editAllocatedTo").value = assetData.AllocatedTo || "";
+      document.getElementById("editPurchaseDate").value = assetData.purchaseDate || "";
+
+      openEditModal();
+    } catch (error) {
+      console.error("Error loading asset for edit:", error);
+      alert("Failed to load asset details for edit.");
+    }
+  }
+
+  async function saveEditedAsset(event) {
+    event.preventDefault();
+
+    if (!currentEditingAssetId || !currentEditingAssetData) {
+      alert("No asset selected for editing.");
+      return;
+    }
+
+    const type = document.getElementById("editType").value.trim();
+    const model = document.getElementById("editModel").value.trim();
+    const serialNumber = document.getElementById("editSerialNumber").value.trim();
+    const allocatedTo = document.getElementById("editAllocatedTo").value.trim();
+    const purchaseDate = document.getElementById("editPurchaseDate").value;
+
+    if (!type || !model || !serialNumber || !purchaseDate) {
+      alert("Please fill all required fields (Type, Model, Serial Number, Purchase Date).");
+      return;
+    }
+
+    try {
+      const duplicateQuery = query(
+        assetsCollection,
+        where("serialNumber", "==", serialNumber)
+      );
+      const duplicateSnapshot = await getDocs(duplicateQuery);
+      const hasDuplicate = duplicateSnapshot.docs.some(d => d.id !== currentEditingAssetId);
+
+      if (hasDuplicate) {
+        alert("Serial Number already exists for another asset.");
+        return;
+      }
+
+      const updatedData = {
+        type,
+        model,
+        serialNumber,
+        AllocatedTo: allocatedTo,
+        purchaseDate
+      };
+
+      const details = formatEditDetails(currentEditingAssetData, updatedData);
+      const updatedHistory = [
+        ...(currentEditingAssetData.history || []),
+        {
+          date: new Date().toISOString(),
+          action: "Asset Edited",
+          details
+        }
+      ];
+
+      await updateDoc(doc(db, "assets", currentEditingAssetId), {
+        ...updatedData,
+        history: updatedHistory
       });
+
       alert("Asset updated successfully!");
+      closeEditModal();
       loadAssets();
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      alert("Failed to update asset.");
     }
   }
 
@@ -216,91 +329,29 @@ function applyFilters() {
   }
 
   async function viewHistory(assetId) {
-  const assetDoc = await getDoc(doc(db, "assets", assetId));
-  const asset = assetDoc.data();
-  const history = asset.history || [];
+    const assetDoc = await getDoc(doc(db, "assets", assetId));
+    const asset = assetDoc.data();
+    const history = asset.history || [];
 
-  const historyList = document.getElementById("historyList");
-  historyList.innerHTML = "";
+    const historyList = document.getElementById("historyList");
+    historyList.innerHTML = "";
 
-  if (history.length === 0) {
-    historyList.innerHTML = `<li class="text-gray-500">No history available for this asset.</li>`;
-  } else {
-    history.forEach(entry => {
-      const li = document.createElement("li");
-      li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action} ${entry.details ? `(${entry.details})` : ""}`;
-      historyList.appendChild(li);
-    });
-  }
-
-  document.getElementById("historyModal").classList.remove("hidden");
-}
-
-  async function saveEditedAsset(event) {
-  event.preventDefault();
-
-  if (!currentEditingAssetId || !currentEditingAssetData) {
-    alert("No asset selected for editing.");
-    return;
-  }
-
-  const type = document.getElementById("editType").value.trim();
-  const model = document.getElementById("editModel").value.trim();
-  const name = document.getElementById("editName").value.trim();
-  const serialNumber = document.getElementById("editSerialNumber").value.trim();
-  const purchaseDate = document.getElementById("editPurchaseDate").value;
-
-  if (!type || !model || !serialNumber || !purchaseDate) {
-    alert("Please fill all required fields (Type, Model, Serial Number, Purchase Date).");
-    return;
-  }
-
-  try {
-    // Serial number uniqueness check (exclude current asset)
-    const duplicateQuery = query(
-      assetsCollection,
-      where("serialNumber", "==", serialNumber)
-    );
-    const duplicateSnapshot = await getDocs(duplicateQuery);
-    const hasDuplicate = duplicateSnapshot.docs.some(d => d.id !== currentEditingAssetId);
-
-    if (hasDuplicate) {
-      alert("Serial Number already exists for another asset.");
-      return;
+    if (history.length === 0) {
+      historyList.innerHTML = `<li class="text-gray-500">No history available for this asset.</li>`;
+    } else {
+      history.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action} ${entry.details ? `(${entry.details})` : ""}`;
+        historyList.appendChild(li);
+      });
     }
 
-    const updatedData = {
-      type,
-      model,
-      name,
-      serialNumber,
-      purchaseDate
-      // Intentionally NOT updating AllocatedTo, status, assetId
-    };
-
-    const details = formatEditDetails(currentEditingAssetData, updatedData);
-    const updatedHistory = [
-      ...(currentEditingAssetData.history || []),
-      {
-        date: new Date().toISOString(),
-        action: "Asset Edited",
-        details
-      }
-    ];
-
-    await updateDoc(doc(db, "assets", currentEditingAssetId), {
-      ...updatedData,
-      history: updatedHistory
-    });
-
-    alert("Asset updated successfully!");
-    closeEditModal();
-    loadAssets();
-  } catch (error) {
-    console.error("Error updating asset:", error);
-    alert("Failed to update asset.");
+    document.getElementById("historyModal").classList.remove("hidden");
   }
-}
+
+  closeEditModalBtn?.addEventListener("click", closeEditModal);
+  cancelEditModalBtn?.addEventListener("click", closeEditModal);
+  editForm?.addEventListener("submit", saveEditedAsset);
 
   window.confirmDelete = confirmDelete;
   window.returnAsset = returnAsset;
