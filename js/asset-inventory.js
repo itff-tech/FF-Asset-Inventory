@@ -9,7 +9,7 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { db, auth } from "../firebase-client.js";
+import { db } from "../firebase-client.js";
 const assetsCollection = collection(db, "assets");
 
 let allAssets = [];
@@ -30,138 +30,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeEditModalBtn = document.getElementById("closeEditModal");
   const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
-/* ===========================
-   🔍 INVENTORY DEBUG BLOCK
-   =========================== */
-function classifyFirestoreError(err) {
-  const code = err?.code || "unknown";
-  const msg = err?.message || "";
-  if (code.includes("permission-denied")) return "permission-denied";
-  if (code.includes("unavailable")) return "unavailable";
-  if (code.includes("unauthenticated")) return "unauthenticated";
-  if (code.includes("failed-precondition")) return "failed-precondition";
-  return "other";
-}
-
-function showDebugAlert(title, lines = []) {
-  const text = [title, ...lines].join("\n");
-  alert(text);
-}
-
-async function debugInventoryHealthCheck() {
-  try {
-    // 1) Auth state
-    const isLoggedIn = !!auth?.currentUser;
-    const userEmail = auth?.currentUser?.email || "N/A";
-    console.log("[INV-DEBUG] currentUser:", isLoggedIn ? userEmail : null);
-
-    // 2) Firestore read check
-    const snap = await getDocs(assetsCollection);
-    console.log("[INV-DEBUG] Firestore read OK. docs:", snap.size);
-
-    if (snap.size === 0) {
-      console.warn("[INV-DEBUG] assets collection is reachable but empty.");
-      showDebugAlert("Inventory Debug", [
-        "✅ Auth: " + (isLoggedIn ? "Logged in" : "Not logged in"),
-        "✅ Firestore: Reachable",
-        "⚠ assets collection has 0 documents"
-      ]);
-    }
-    return { ok: true, size: snap.size };
-  } catch (err) {
-    const reason = classifyFirestoreError(err);
-
-    console.error("[INV-DEBUG] Firestore read failed");
-    console.error("[INV-DEBUG] reason:", reason);
-    console.error("[INV-DEBUG] code:", err?.code);
-    console.error("[INV-DEBUG] message:", err?.message);
-    console.error("[INV-DEBUG] full error:", err);
-
-    let friendly = "Unknown error";
-    if (reason === "permission-denied") {
-      friendly = "Firestore rules blocked read (permission-denied).";
-    } else if (reason === "unavailable") {
-      friendly = "Network/Firestore backend unavailable.";
-    } else if (reason === "unauthenticated") {
-      friendly = "User not authenticated for this read.";
-    } else if (reason === "failed-precondition") {
-      friendly = "Missing Firestore index or precondition failed.";
-    }
-
-    showDebugAlert("Inventory Debug FAILED", [
-      "Reason: " + reason,
-      "Code: " + (err?.code || "N/A"),
-      "Message: " + (err?.message || "N/A"),
-      "Hint: " + friendly
-    ]);
-
-    return { ok: false, reason, error: err };
-  }
-}
-  
-
   // 🔄 Load Assets
- async function loadAssets() {
-  console.log("=== INVENTORY LOAD START ===");
-  console.log("=== INVENTORY DEBUG START ===");
-  console.log("Current URL:", window.location.href);
-  console.log("assetsCollection path:", assetsCollection.path);
-
- const health = await debugInventoryHealthCheck();
-  if (!health.ok) {
-    // Stop rendering when Firestore/auth failed; alert already shown.
-    return;
-  }
-
-  const snapshot = await getDocs(assetsCollection);
-  allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  renderTable(allAssets);
-
-    console.log("Firestore connected ✅");
-    console.log("Documents fetched:", snapshot.size);
-
-    allAssets = snapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      console.log("Doc:", docSnap.id, data);
-      return { id: docSnap.id, ...data };
-    });
-
+  async function loadAssets() {
+    const snapshot = await getDocs(assetsCollection);
+    allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderTable(allAssets);
 
-    if (allAssets.length === 0) {
-      console.warn("No assets found in Firestore collection 'assets'.");
+    // Add filters if elements exist
+    if (searchInput && statusFilter && resetBtn) {
+      searchInput.addEventListener("input", applyFilters);
+      statusFilter.addEventListener("change", applyFilters);
+      typeFilter?.addEventListener("change", applyFilters);
+      resetBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        statusFilter.value = "";
+        if (typeFilter) typeFilter.value = "";
+        currentPage = 1;
+        renderTable(allAssets);
+      });
     }
-
-  } catch (error) {
-    console.error("❌ loadAssets failed");
-    console.error("Error code:", error?.code);
-    console.error("Error message:", error?.message);
-    console.error("Full error:", error);
-
-    // Optional: show quick on-screen error
-    alert(
-      "Inventory load failed.\n" +
-      "Code: " + (error?.code || "unknown") + "\n" +
-      "Message: " + (error?.message || "unknown")
-    );
   }
-
-  // Keep existing filter event wiring exactly as is
-  if (searchInput && statusFilter && resetBtn) {
-    searchInput.addEventListener("input", applyFilters);
-    statusFilter.addEventListener("change", applyFilters);
-    typeFilter?.addEventListener("change", applyFilters);
-    resetBtn.addEventListener("click", () => {
-      searchInput.value = "";
-      statusFilter.value = "";
-      if (typeFilter) typeFilter.value = "";
-      currentPage = 1;
-      renderTable(allAssets);
-    });
-  }
-
-  console.log("=== INVENTORY DEBUG END ===");
-}
 
   // ✅ ADD THIS FUNCTION to load asset types into dropdown
   async function loadAssetTypes() {
@@ -328,7 +216,6 @@ function applyFilters() {
       changes.push(`purchaseDate: ${before.purchaseDate || "-"} → ${after.purchaseDate || "-"}`);
     }
      return changes.length > 0 ? changes.join("; ") : "No field-level changes";
-  
      try {
       const assetDoc = await getDoc(doc(db, "assets", assetId));
 
