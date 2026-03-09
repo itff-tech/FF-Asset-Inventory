@@ -1,6 +1,7 @@
 <script type="module">
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { auth } from "./firebase-client.js";
+
   onAuthStateChanged(auth, user => {
     if (!user) {
       window.location.href = "login.html"; // Redirect if not logged in
@@ -99,7 +100,7 @@
     <!-- ✅ JS -->
     <script type="module" src="js/asset-inventory.js"></script>
 
- <!-- ✏️ Edit Asset Modal -->
+    <!-- ✏️ Edit Asset Modal -->
     <div id="editAssetModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
       <div class="bg-white p-6 rounded w-[92%] max-w-2xl max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-bold mb-4">Edit Asset</h3>
@@ -148,7 +149,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 🔍 History Modal -->
     <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
       <div class="bg-white p-6 rounded w-[90%] max-w-md max-h-[80vh] overflow-y-auto">
@@ -161,8 +162,7 @@
     </div>
 
     <!--Logout Fun-->
- 
-<script type="module" src="auth.js"></script>
-  
+    <script type="module" src="auth.js"></script>
+  </main>
 </body>
 </html>
