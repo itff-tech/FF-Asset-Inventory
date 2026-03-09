@@ -236,6 +236,71 @@ function applyFilters() {
   document.getElementById("historyModal").classList.remove("hidden");
 }
 
+  async function saveEditedAsset(event) {
+  event.preventDefault();
+
+  if (!currentEditingAssetId || !currentEditingAssetData) {
+    alert("No asset selected for editing.");
+    return;
+  }
+
+  const type = document.getElementById("editType").value.trim();
+  const model = document.getElementById("editModel").value.trim();
+  const name = document.getElementById("editName").value.trim();
+  const serialNumber = document.getElementById("editSerialNumber").value.trim();
+  const purchaseDate = document.getElementById("editPurchaseDate").value;
+
+  if (!type || !model || !serialNumber || !purchaseDate) {
+    alert("Please fill all required fields (Type, Model, Serial Number, Purchase Date).");
+    return;
+  }
+
+  try {
+    // Serial number uniqueness check (exclude current asset)
+    const duplicateQuery = query(
+      assetsCollection,
+      where("serialNumber", "==", serialNumber)
+    );
+    const duplicateSnapshot = await getDocs(duplicateQuery);
+    const hasDuplicate = duplicateSnapshot.docs.some(d => d.id !== currentEditingAssetId);
+
+    if (hasDuplicate) {
+      alert("Serial Number already exists for another asset.");
+      return;
+    }
+
+    const updatedData = {
+      type,
+      model,
+      name,
+      serialNumber,
+      purchaseDate
+      // Intentionally NOT updating AllocatedTo, status, assetId
+    };
+
+    const details = formatEditDetails(currentEditingAssetData, updatedData);
+    const updatedHistory = [
+      ...(currentEditingAssetData.history || []),
+      {
+        date: new Date().toISOString(),
+        action: "Asset Edited",
+        details
+      }
+    ];
+
+    await updateDoc(doc(db, "assets", currentEditingAssetId), {
+      ...updatedData,
+      history: updatedHistory
+    });
+
+    alert("Asset updated successfully!");
+    closeEditModal();
+    loadAssets();
+  } catch (error) {
+    console.error("Error updating asset:", error);
+    alert("Failed to update asset.");
+  }
+}
 
   window.confirmDelete = confirmDelete;
   window.returnAsset = returnAsset;
