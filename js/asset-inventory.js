@@ -107,8 +107,15 @@ async function debugInventoryHealthCheck() {
   console.log("Current URL:", window.location.href);
   console.log("assetsCollection path:", assetsCollection.path);
 
-  try {
-    const snapshot = await getDocs(assetsCollection);
+ const health = await debugInventoryHealthCheck();
+  if (!health.ok) {
+    // Stop rendering when Firestore/auth failed; alert already shown.
+    return;
+  }
+
+  const snapshot = await getDocs(assetsCollection);
+  allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  renderTable(allAssets);
 
     console.log("Firestore connected ✅");
     console.log("Documents fetched:", snapshot.size);
