@@ -31,25 +31,59 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
   // 🔄 Load Assets
-  async function loadAssets() {
+ async function loadAssets() {
+  console.log("=== INVENTORY DEBUG START ===");
+  console.log("Current URL:", window.location.href);
+  console.log("assetsCollection path:", assetsCollection.path);
+
+  try {
     const snapshot = await getDocs(assetsCollection);
-    allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    console.log("Firestore connected ✅");
+    console.log("Documents fetched:", snapshot.size);
+
+    allAssets = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      console.log("Doc:", docSnap.id, data);
+      return { id: docSnap.id, ...data };
+    });
+
     renderTable(allAssets);
 
-    // Add filters if elements exist
-    if (searchInput && statusFilter && resetBtn) {
-      searchInput.addEventListener("input", applyFilters);
-      statusFilter.addEventListener("change", applyFilters);
-      typeFilter?.addEventListener("change", applyFilters);
-      resetBtn.addEventListener("click", () => {
-        searchInput.value = "";
-        statusFilter.value = "";
-        if (typeFilter) typeFilter.value = "";
-        currentPage = 1;
-        renderTable(allAssets);
-      });
+    if (allAssets.length === 0) {
+      console.warn("No assets found in Firestore collection 'assets'.");
     }
+
+  } catch (error) {
+    console.error("❌ loadAssets failed");
+    console.error("Error code:", error?.code);
+    console.error("Error message:", error?.message);
+    console.error("Full error:", error);
+
+    // Optional: show quick on-screen error
+    alert(
+      "Inventory load failed.\n" +
+      "Code: " + (error?.code || "unknown") + "\n" +
+      "Message: " + (error?.message || "unknown")
+    );
   }
+
+  // Keep existing filter event wiring exactly as is
+  if (searchInput && statusFilter && resetBtn) {
+    searchInput.addEventListener("input", applyFilters);
+    statusFilter.addEventListener("change", applyFilters);
+    typeFilter?.addEventListener("change", applyFilters);
+    resetBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      statusFilter.value = "";
+      if (typeFilter) typeFilter.value = "";
+      currentPage = 1;
+      renderTable(allAssets);
+    });
+  }
+
+  console.log("=== INVENTORY DEBUG END ===");
+}
 
   // ✅ ADD THIS FUNCTION to load asset types into dropdown
   async function loadAssetTypes() {
