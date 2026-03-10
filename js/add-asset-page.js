@@ -145,7 +145,7 @@ function showToast(message, type = "info", duration = 3000) {
     };
 
     await addDoc(assetsCollection, assetData);
-    alert(`✅ Asset ${assetId} added successfully!`);
+    showToast("✅ Asset ${assetId} Added successfully!", "success");
     document.getElementById("assetForm").reset();
     await loadAssetTypes();
   } catch (error) {
