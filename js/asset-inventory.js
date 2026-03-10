@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       history.forEach(entry => {
         const li = document.createElement("li");
-        li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action} — ${entry.details} ? `(${entry.details})` : ""}`;
+        li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action} ${entry.details} ? `(${entry.details})` : ""}`;
         historyList.appendChild(li);
       });
     }
