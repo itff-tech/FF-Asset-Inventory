@@ -109,7 +109,7 @@ import {
         {
           date: new Date().toISOString(),
           action: "Asset Added",
-          details: "Initial registration"
+          details: `Registered asset (${type || "-"} | ${model || "-"} | SN: ${serialNumber || "-"})`
         }
       ]
     };
