@@ -4,7 +4,7 @@
  * @param {"success"|"error"|"warning"|"info"} type
  * @param {number} duration - auto-dismiss in ms (default 3000)
  */
-function showToast(message, type = "info", duration = 3000) {
+window.showToast = function (message, type = "info", duration = 3000) {
   const container = document.getElementById("toastContainer");
   if (!container) {
     console.warn("Toast container (#toastContainer) not found.");
