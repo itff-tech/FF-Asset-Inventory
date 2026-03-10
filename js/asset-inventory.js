@@ -338,10 +338,10 @@ document.addEventListener("DOMContentLoaded", () => {
       historyList.innerHTML = `<li class="text-gray-500">No history available for this asset.</li>`;
     } else {
       history.forEach(entry => {
-        const li = document.createElement("li");
-        li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action} ${entry.details} ? `(${entry.details})` : ""}`;
-        historyList.appendChild(li);
-      });
+  const li = document.createElement("li");
+  li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action}${entry.details ? ` — ${entry.details}` : ""}`;
+  historyList.appendChild(li);
+});
     }
 
     document.getElementById("historyModal").classList.remove("hidden");
