@@ -79,14 +79,17 @@
     });
   </script>
 
-  <!-- Data Script -->
-  <script type="module" src="js/user-asset-overview.js"></script>
-
-  <!-- 🔐 Global auth + auto logout (make sure auth.js is in root) -->
-  <script type="module" src="auth.js"></script>
-
 <!-- Toast Container -->
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  
+  <script src="js/ui-toast.js"></script>
+
+   <!-- Data Script -->
+  <script type="module" src="js/user-asset-overview.js"></script>
+
+   <!-- 🔐 Logout -->
+  <script type="module" src="auth.js"></script>
   
 </body>
 </html>
