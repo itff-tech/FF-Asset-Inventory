@@ -87,32 +87,3 @@ async function allocateAsset() {
     showToast("❌ Error allocating asset.", "error");
   }
 }
-
-
-// Toast Notification
-function showToast(message, type) {
-  const toast = document.createElement("div");
-  toast.textContent = message;
-  toast.className = `
-    fixed bottom-5 right-5 
-    ${type === "success" ? "bg-green-500" : "bg-red-500"} 
-    text-white px-4 py-2 rounded shadow-lg animate-fade-in-out z-50
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-// Toast animation styles
-const style = document.createElement('style');
-style.textContent = `
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-20px); }
-}
-.animate-fade-in-out {
-  animation: fadeInOut 3s ease-in-out forwards;
-}
-`;
-document.head.appendChild(style);
