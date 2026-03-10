@@ -71,34 +71,58 @@ import {
 
   // 📥 Add Asset Form
   document.getElementById("assetForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const type = document.getElementById("assetType").value;
+  e.preventDefault();
+
+  const type = document.getElementById("assetType").value;
+  const model = document.getElementById("model").value.trim();
+  const serialNumber = document.getElementById("serialNumber").value.trim();
+  const purchaseDate = document.getElementById("purchaseDate").value;
+
+  if (!type || !model || !serialNumber || !purchaseDate) {
+    alert("Please fill all required fields.");
+    return;
+  }
+
+  try {
+    // Check duplicate serial number before creating asset
+    const duplicateQuery = query(
+      assetsCollection,
+      where("serialNumber", "==", serialNumber)
+    );
+    const duplicateSnapshot = await getDocs(duplicateQuery);
+
+    if (!duplicateSnapshot.empty) {
+      alert("Serial Number already exists. Please enter a unique serial number.");
+      return;
+    }
+
     const assetId = await generateAssetId(type);
 
     const assetData = {
       assetId,
       type,
-      model: document.getElementById("model").value,
-      serialNumber: document.getElementById("serialNumber").value,
-      purchaseDate: document.getElementById("purchaseDate").value,
+      model,
+      serialNumber,
+      purchaseDate,
       status: "Available",
-      history: [{
-        date: new Date().toISOString(),
-        action: "Asset Added",
-        details: "Initial registration"
-      }]
+      history: [
+        {
+          date: new Date().toISOString(),
+          action: "Asset Added",
+          details: "Initial registration"
+        }
+      ]
     };
 
-    try {
-      await addDoc(assetsCollection, assetData);
-      alert(`✅ Asset ${assetId} added successfully!`);
-      document.getElementById("assetForm").reset();
-      await loadAssetTypes();
-    } catch (error) {
-      console.error("❌ Error adding asset:", error);
-      alert("Failed to add asset.");
-    }
-  });
+    await addDoc(assetsCollection, assetData);
+    alert(`✅ Asset ${assetId} added successfully!`);
+    document.getElementById("assetForm").reset();
+    await loadAssetTypes();
+  } catch (error) {
+    console.error("❌ Error adding asset:", error);
+    alert("Failed to add asset.");
+  }
+});
 
   // ⚙️ Open popover
   manageBtn.addEventListener("click", async () => {
