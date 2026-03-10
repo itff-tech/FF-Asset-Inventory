@@ -66,38 +66,26 @@
   <script type="module" src="./js/allocate-asset.js"></script>
 
 <script type="module">
- import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { auth } from "./firebase-client.js";
-  // ✅ Hide page until auth is checked
-  onAuthStateChanged(auth, user => {
-    if (user) {
-       document.documentElement.style.visibility = "visible";
-    } else {
-      window.location.href = "https://techstrategy.co/login.html";
-    }
-  });
 
-  /* / ✅ Logout functionality
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      signOut(auth)
-        .then(() => {
-          window.location.href = "https://techstrategy.co/login.html";
-        })
-        .catch(error => {
-          alert("Logout failed: " + error.message);
-        });
-    });
-  }
+    <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-</script>
-
-  <!-- Toast Container -->
-<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
-  
   <script src="js/ui-toast.js"></script>
+  <script type="module" src="./js/allocate-asset.js"></script>
+
+  <script type="module">
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { auth } from "./firebase-client.js";
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.documentElement.style.visibility = "visible";
+      } else {
+        window.location.href = "https://techstrategy.co/login.html";
+      }
+    });
+  </script>
+
   <script type="module" src="auth.js"></script>
-  
 </body>
 </html>
