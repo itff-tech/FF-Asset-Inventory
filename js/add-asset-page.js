@@ -63,17 +63,17 @@ function showToast(message, type = "info", duration = 3000) {
   document.getElementById("addAssetTypeBtn").addEventListener("click", async () => {
     const newTypeInput = document.getElementById("newAssetType");
     const newType = newTypeInput.value.trim();
-    if (!newType) return alert("Please enter a valid asset type.");
+    if (!newType) return showToast(`Please Enter a Valid Asset Type`);
 
     const q = query(collection(db, "assetTypes"), where("name", "==", newType));
     const existing = await getDocs(q);
     if (!existing.empty) {
-      alert("This asset type already exists.");
+    showToast(`This Asset Type Already Exists`);
       return;
     }
 
     await addDoc(collection(db, "assetTypes"), { name: newType });
-    alert("✅ Asset type added.");
+     showToast(`Asset type added`);
     newTypeInput.value = "";
     await loadAssetTypes();
   });
@@ -109,7 +109,7 @@ function showToast(message, type = "info", duration = 3000) {
   const purchaseDate = document.getElementById("purchaseDate").value;
 
   if (!type || !model || !serialNumber || !purchaseDate) {
-    alert("Please fill all required fields.");
+    showToast(`Please fill all required fields`);
     return;
   }
 
@@ -122,7 +122,7 @@ function showToast(message, type = "info", duration = 3000) {
     const duplicateSnapshot = await getDocs(duplicateQuery);
 
     if (!duplicateSnapshot.empty) {
-      alert("Serial Number already exists. Please enter a unique serial number.");
+       showToast(`Serial Number already exists`);
       return;
     }
 
@@ -145,12 +145,12 @@ function showToast(message, type = "info", duration = 3000) {
     };
 
     await addDoc(assetsCollection, assetData);
-    showToast(`✅ Asset ${assetId} Added successfully!`, "success");
+    showToast(`Asset ${assetId} Added successfully!`, "success");
     document.getElementById("assetForm").reset();
     await loadAssetTypes();
   } catch (error) {
     console.error("❌ Error adding asset:", error);
-    alert("Failed to add asset.");
+    showToast(`Failed to add asset`);
   }
 });
 
@@ -225,9 +225,9 @@ document.addEventListener("click", (event) => {
       });
 
       await refreshCustomList();
-      alert("Deleted successfully!");
+      showToast(`Deleted successfully!`);
     } catch (err) {
       console.error(err);
-      alert("Error deleting asset type");
+     showToast(`Error deleting asset type`);
     }
   });
