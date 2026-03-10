@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function confirmDelete(assetId) {
     if (confirm("Are you sure you want to delete this asset?")) {
       await deleteDoc(doc(db, "assets", assetId));
-      alert("Asset deleted successfully!");
+      window.showToast("Asset deleted successfully!", "success")
       loadAssets();
     }
   }
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
         history: updatedHistory
       });
 
-      alert("Asset returned successfully!");
+     window.showToast("Asset returned successfully!", "success")
       loadAssets();
     }
   }
@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const assetDoc = await getDoc(doc(db, "assets", assetId));
 
       if (!assetDoc.exists()) {
-        alert("Asset not found.");
+        window.showToast("Asset not found", "warning")
         return;
       }
 
@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       openEditModal();
     } catch (error) {
       console.error("Error loading asset for edit:", error);
-      alert("Failed to load asset details for edit.");
+      window.showToast("Failed to load asset details for edit", "error")
     }
   }
 
@@ -272,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const hasDuplicate = duplicateSnapshot.docs.some(d => d.id !== currentEditingAssetId);
 
       if (hasDuplicate) {
-        alert("Serial Number already exists for another asset.");
+        window.showToast("Serial Number already exists for another asset", "error")
         return;
       }
 
@@ -299,12 +299,12 @@ document.addEventListener("DOMContentLoaded", () => {
         history: updatedHistory
       });
 
-      alert("Asset updated successfully!");
+      window.showToast("Asset updated successfully!", "success")
       closeEditModal();
       loadAssets();
     } catch (error) {
       console.error("Error updating asset:", error);
-      alert("Failed to update asset.");
+      window.showToast("Failed to update asset", "error")
     }
   }
 
