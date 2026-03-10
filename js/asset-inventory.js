@@ -198,26 +198,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatEditDetails(before, after) {
-    const changes = [];
+  const changes = [];
 
-    if ((before.type || "") !== (after.type || "")) {
-      changes.push(`type: ${before.type || "-"} → ${after.type || "-"}`);
+  const appendIfChanged = (label, oldValue, newValue) => {
+    const oldText = (oldValue ?? "").toString().trim();
+    const newText = (newValue ?? "").toString().trim();
+    if (oldText !== newText) {
+      changes.push(`${label}: ${oldText || "-"} → ${newText || "-"}`);
     }
-    if ((before.model || "") !== (after.model || "")) {
-      changes.push(`model: ${before.model || "-"} → ${after.model || "-"}`);
-    }
-    if ((before.serialNumber || "") !== (after.serialNumber || "")) {
-      changes.push(`serialNumber: ${before.serialNumber || "-"} → ${after.serialNumber || "-"}`);
-    }
-    if ((before.AllocatedTo || "") !== (after.AllocatedTo || "")) {
-      changes.push(`AllocatedTo: ${before.AllocatedTo || "-"} → ${after.AllocatedTo || "-"}`);
-    }
-    if ((before.purchaseDate || "") !== (after.purchaseDate || "")) {
-      changes.push(`purchaseDate: ${before.purchaseDate || "-"} → ${after.purchaseDate || "-"}`);
-    }
+  };
 
-    return changes.length > 0 ? changes.join("; ") : "No field-level changes";
-  }
+  appendIfChanged("Type", before.type, after.type);
+  appendIfChanged("Model", before.model, after.model);
+  appendIfChanged("Serial Number", before.serialNumber, after.serialNumber);
+  appendIfChanged("Allocated To", before.AllocatedTo, after.AllocatedTo);
+  appendIfChanged("Purchase Date", before.purchaseDate, after.purchaseDate);
+
+  return changes.length > 0 ? changes.join("; ") : "No field changes";
+}
 
   async function editAsset(assetId) {
     try {
