@@ -68,7 +68,7 @@ async function allocateAsset() {
       {
         date: new Date().toISOString(),
         action: "Allocated",
-        details: `Assigned to ${userName}`
+        details: `Returned from ${assetData.AllocatedTo || "Unknown"}${assetData.allocationDate ? ` (allocated on ${assetData.allocationDate})` : ""}`
       }
     ];
 
