@@ -92,7 +92,7 @@ import {
     const duplicateSnapshot = await getDocs(duplicateQuery);
 
     if (!duplicateSnapshot.empty) {
-       showToast(`Serial Number already exists`);
+      window.showToast("Serial number already exists", "warning");
       return;
     }
 
