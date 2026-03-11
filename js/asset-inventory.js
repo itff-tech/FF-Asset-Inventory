@@ -95,24 +95,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("tr");
 
       row.innerHTML = `
+       <td class="border px-4 py-2 text-center">${start + index + 1}</td>
+        <td class="border px-4 py-2 text-center">${asset.assetId || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.type || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.model || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.serialNumber || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.AllocatedTo || "-"}</td>
+        <td class="border px-4 py-2 text-center">${asset.allocationDate || "-"}</td>
+        <td class="border px-4 py-2 text-center">${asset.purchaseDate || "N/A"}</td>
         <td class="border px-4 py-2 text-center">
-  ${
-    (() => {
-      const rawStatus =
-        asset.status ??
-        asset.Status ??
-        ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available");
-
-      const normalizedStatus = String(rawStatus).trim().toLowerCase();
-      const isAvailable = normalizedStatus === "available";
-      const statusLabel = isAvailable ? "Available" : "Allocated";
-
-      return `<span class="px-2 py-1 rounded text-white ${
-        isAvailable ? "bg-green-500" : "bg-red-500"
-      }">${statusLabel}</span>`;
-    })()
-  }
-</td>
+          <span class="px-2 py-1 rounded text-white ${
+            asset.status?.toLowerCase() === "available" ? "bg-green-500" : "bg-red-500"
+          }">${asset.status || "N/A"}</span>
+        </td>
         <td class="border px-4 py-2 space-x-2 text-center">
           <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${asset.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
           <button class="allocate-btn text-green-500 hover:text-green-700" data-assetid="${asset.assetId}" title="Allocate"><i class="bi bi-arrow-left-right"></i></button>
