@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function confirmDelete(assetId) {
     if (confirm("Are you sure you want to delete this asset?")) {
       await deleteDoc(doc(db, "assets", assetId));
-      window.showToast("Asset deleted successfully!", "success")
+      window.showToast("Asset deleted successfully!", "error");
       loadAssets();
     }
   }
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
         history: updatedHistory
       });
 
-     window.showToast("Asset returned successfully!", "success")
+     window.showToast("Asset returned successfully!", "info");
       loadAssets();
     }
   }
