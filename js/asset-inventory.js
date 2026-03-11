@@ -104,10 +104,14 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="border px-4 py-2 text-center">${asset.allocationDate || "-"}</td>
         <td class="border px-4 py-2 text-center">${asset.purchaseDate || "N/A"}</td>
         <td class="border px-4 py-2 text-center">
-          <span class="px-2 py-1 rounded text-white ${
-            asset.status?.toLowerCase() === "available" ? "bg-green-500" : "bg-red-500"
-          }">${asset.status || "N/A"}</span>
-        </td>
+  <span class="px-2 py-1 rounded text-white ${
+    ((asset.status || asset.Status || ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available")).toLowerCase() === "available")
+      ? "bg-green-500"
+      : "bg-red-500"
+  }">${
+    (asset.status || asset.Status || ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available"))
+  }</span>
+</td>
         <td class="border px-4 py-2 space-x-2 text-center">
           <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${asset.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
           <button class="allocate-btn text-green-500 hover:text-green-700" data-assetid="${asset.assetId}" title="Allocate"><i class="bi bi-arrow-left-right"></i></button>
