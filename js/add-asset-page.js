@@ -1,10 +1,7 @@
-import {
-    collection, addDoc, query, where, getDocs, deleteDoc
-  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-  import {
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { auth, db } from "../firebase-client.js";
+  import { showConfirmModal } from "./ui-confirm.js";
   const assetsCollection = collection(db, "assets");
 
   const assetTypeSelect = document.getElementById("assetType");
