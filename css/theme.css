@@ -259,3 +259,87 @@
   gap: 0.625rem;
   justify-content: flex-end;
 }
+
+/* === Premium Edit Modal === */
+.edit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 70;
+}
+.edit-modal-overlay.hidden {
+  display: none;
+}
+.edit-modal-card {
+  width: min(100%, 820px);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.2);
+}
+.edit-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.edit-modal-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+.edit-modal-subtitle {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+.edit-modal-icon-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  color: #6b7280;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.edit-modal-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+.edit-modal-form {
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+.edit-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+@media (min-width: 768px) {
+  .edit-modal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.edit-field-block {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.8rem;
+}
+.edit-readonly-input {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.edit-modal-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
