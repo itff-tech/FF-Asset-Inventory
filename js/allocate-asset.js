@@ -79,7 +79,7 @@ async function allocateAsset() {
       history: updatedHistory
     });
 
-    window.showToast("✅ Asset successfully Allocated!", "success");
+    window.showToast("Asset successfully Allocated!", "success");
     document.getElementById("allocateForm").reset();
     setTimeout(() => location.reload(), 1000);
   } catch (error) {
