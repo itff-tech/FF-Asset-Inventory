@@ -175,7 +175,14 @@ document.addEventListener("click", (event) => {
     if (!trashBtn) return;
 
     const typeToDelete = trashBtn.dataset.value;
-    if (!confirm(`Delete "${typeToDelete}"?`)) return;
+const ok = await showConfirmModal({
+  title: "Delete Asset Type",
+  message: `Delete "${typeToDelete}"? This cannot be undone.`,
+  confirmText: "Delete",
+  cancelText: "Keep",
+  type: "warning"
+});
+if (!ok) return;
 
     try {
       const q = query(collection(db, "assetTypes"), where("name", "==", typeToDelete));
