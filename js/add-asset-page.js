@@ -195,7 +195,7 @@ document.addEventListener("click", (event) => {
       });
 
       await refreshCustomList();
-      window.showToast("Deleted successfully!t", "error");
+      window.showToast("Deleted successfully!", "error");
     } catch (err) {
       console.error(err);
      showToast(`Error deleting asset type`);
