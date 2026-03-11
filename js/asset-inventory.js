@@ -1,15 +1,6 @@
 // Firebase imports
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  getDoc,
-  query,
-  where
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { showConfirmModal } from "./ui-confirm.js";
 import { db } from "../firebase-client.js";
 const assetsCollection = collection(db, "assets");
 
@@ -152,12 +143,20 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   async function confirmDelete(assetId) {
-    if (confirm("Are you sure you want to delete this asset?")) {
-      await deleteDoc(doc(db, "assets", assetId));
-      window.showToast("Asset deleted successfully!", "error");
-      loadAssets();
-    }
-  }
+  const ok = await showConfirmModal({
+    title: "Delete Asset",
+    message: "Are you sure you want to delete this asset? This action cannot be undone.",
+    confirmText: "Delete",
+    cancelText: "Cancel",
+    type: "error"
+  });
+
+  if (!ok) return;
+
+  await deleteDoc(doc(db, "assets", assetId));
+  window.showToast("Asset deleted successfully!", "success");
+  loadAssets();
+}
 
   async function returnAsset(assetId) {
     if (confirm("Mark this asset as Available?")) {
