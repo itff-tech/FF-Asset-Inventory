@@ -168,6 +168,21 @@
   <script src="js/ui-toast.js"></script>
     <!--Logout Fun-->
   <script type="module" src="auth.js"></script>
+
+  <!-- Reusable confirmation modal -->
+<div id="confirmModal" class="confirm-modal hidden" aria-hidden="true">
+  <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="confirm-modal-icon" data-confirm-icon data-type="warning">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <h3 id="confirmModalTitle" class="confirm-modal-title" data-confirm-title>Confirm Action</h3>
+    <p class="confirm-modal-message" data-confirm-message>Are you sure you want to continue?</p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="btn-secondary" data-confirm-cancel>Cancel</button>
+      <button type="button" class="btn-primary" data-confirm-ok>Confirm</button>
+    </div>
+  </div>
+</div>
   
 </body>
 </html>
