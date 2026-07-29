@@ -146,21 +146,30 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable(allAssets);
   };
 
+  const deleteInFlight = new Set();
+
   async function confirmDelete(assetId) {
-  const ok = await showConfirmModal({
-    title: "Delete Asset",
-    message: "Are you sure you want to delete this asset? This action cannot be undone.",
-    confirmText: "Delete",
-    cancelText: "Cancel",
-    type: "error"
-  });
+    if (deleteInFlight.has(assetId)) return;
 
-  if (!ok) return;
+    const ok = await showConfirmModal({
+      title: "Delete Asset",
+      message: "Are you sure you want to delete this asset? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      type: "error"
+    });
 
-  await deleteDoc(doc(db, "assets", assetId));
-  window.showToast("Asset deleted successfully!", "success");
-  loadAssets();
-}
+    if (!ok) return;
+
+    deleteInFlight.add(assetId);
+    try {
+      await deleteDoc(doc(db, "assets", assetId));
+      window.showToast("Asset deleted successfully!", "success");
+      loadAssets();
+    } finally {
+      deleteInFlight.delete(assetId);
+    }
+  }
 
   async function returnAsset(assetId) {
     const ok = await showConfirmModal({
