@@ -8,16 +8,21 @@ document.addEventListener('DOMContentLoaded', async function () {
   const urlParams = new URLSearchParams(window.location.search);
   const preselectedAssetId = urlParams.get('assetId'); // e.g., "L-5347"
 
-  assetDropdown.innerHTML = `<option value="">-- Select an Asset --</option>`;
+  assetDropdown.innerHTML = `<option value="">Loading available assets…</option>`;
+  assetDropdown.disabled = true;
 
   try {
     const snapshot = await getDocs(collection(db, "assets"));
     let docIdToSelect = null;
+    let availableCount = 0;
+
+    assetDropdown.innerHTML = `<option value="">-- Select an Asset --</option>`;
 
     snapshot.forEach(docSnap => {
       const asset = docSnap.data();
 
       if (asset.status?.toLowerCase() === "available") {
+        availableCount++;
         const option = document.createElement("option");
         option.value = docSnap.id;
         option.textContent = `${asset.assetId} | ${asset.type} | ${asset.model} | ${asset.serialNumber}`;
@@ -30,11 +35,18 @@ document.addEventListener('DOMContentLoaded', async function () {
       }
     });
 
+    if (availableCount === 0) {
+      assetDropdown.innerHTML = `<option value="">No available assets to allocate</option>`;
+    } else {
+      assetDropdown.disabled = false;
+    }
+
     if (docIdToSelect) {
       assetDropdown.value = docIdToSelect;
     }
   } catch (error) {
     console.error("Error loading assets:", error);
+    assetDropdown.innerHTML = `<option value="">Failed to load assets</option>`;
     window.showToast("Failed to load available assets.", "error");
   }
 
