@@ -1,5 +1,6 @@
-import { getDocs, collection, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getDocs, getDoc, collection, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from "../firebase-client.js";
+import { showConfirmModal } from "./ui-confirm.js";
 const assetsCollection = collection(db, "assets");
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   } catch (error) {
     console.error("Error loading assets:", error);
-    alert("❌ Failed to load available assets.");
+    window.showToast("Failed to load available assets.", "error");
   }
 
   const assignButton = document.getElementById("assignBtn");
@@ -56,12 +57,19 @@ async function allocateAsset() {
     return;
   }
 
-  if (!confirm("Are you sure you want to assign this asset?")) return;
+  const ok = await showConfirmModal({
+    title: "Allocate Asset",
+    message: `Assign this asset to ${userName}?`,
+    confirmText: "Assign",
+    cancelText: "Cancel",
+    type: "info"
+  });
+  if (!ok) return;
 
   try {
     const assetRef = doc(db, "assets", assetDocId);
-    const assetSnap = await getDocs(assetsCollection);
-    const assetData = (await getDocs(assetsCollection)).docs.find(doc => doc.id === assetDocId)?.data() || {};
+    const assetSnap = await getDoc(assetRef);
+    const assetData = assetSnap.exists() ? assetSnap.data() : {};
 
     const updatedHistory = [
       ...(assetData.history || []),

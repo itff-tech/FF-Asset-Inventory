@@ -13,16 +13,37 @@
     if (!user) window.location.href = "login.html";
   });
 
+  // Built-in asset types that always appear in the dropdown, regardless of
+  // what's stored in Firestore's "assetTypes" collection. Previously this
+  // dropdown was rebuilt entirely from Firestore on every load, silently
+  // deleting these defaults if the collection was empty or missing entries.
+  const DEFAULT_ASSET_TYPES = [
+    "Laptop", "Desktop", "Monitor", "Printer", "Mouse", "Headset", "Keyboard"
+  ];
+
   async function loadAssetTypes() {
+    const previousValue = assetTypeSelect.value;
     assetTypeSelect.innerHTML = `<option value="">Select Type</option>`;
-    const snapshot = await getDocs(collection(db, "assetTypes"));
-    snapshot.forEach(doc => {
-      const type = doc.data().name;
+
+    const seen = new Set();
+    const addOption = (type) => {
+      const key = type.trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
       const option = document.createElement("option");
-      option.value = type.toLowerCase();
+      option.value = key;
       option.textContent = type;
       assetTypeSelect.appendChild(option);
-    });
+    };
+
+    DEFAULT_ASSET_TYPES.forEach(addOption);
+
+    const snapshot = await getDocs(collection(db, "assetTypes"));
+    snapshot.forEach(doc => addOption(doc.data().name));
+
+    if (previousValue && seen.has(previousValue)) {
+      assetTypeSelect.value = previousValue;
+    }
   }
   await loadAssetTypes();
 
@@ -30,17 +51,17 @@
   document.getElementById("addAssetTypeBtn").addEventListener("click", async () => {
     const newTypeInput = document.getElementById("newAssetType");
     const newType = newTypeInput.value.trim();
-    if (!newType) return showToast(`Please Enter a Valid Asset Type`);
+    if (!newType) return showToast(`Please enter a valid asset type`, "warning");
 
     const q = query(collection(db, "assetTypes"), where("name", "==", newType));
     const existing = await getDocs(q);
     if (!existing.empty) {
-    showToast(`This Asset Type Already Exists`);
+    showToast(`This asset type already exists`, "warning");
       return;
     }
 
     await addDoc(collection(db, "assetTypes"), { name: newType });
-     showToast(`Asset type added`);
+     showToast(`Asset type added`, "success");
     newTypeInput.value = "";
     await loadAssetTypes();
   });
@@ -76,7 +97,7 @@
   const purchaseDate = document.getElementById("purchaseDate").value;
 
   if (!type || !model || !serialNumber || !purchaseDate) {
-    showToast(`Please fill all required fields`);
+    showToast(`Please fill all required fields`, "warning");
     return;
   }
 
@@ -117,7 +138,7 @@
     await loadAssetTypes();
   } catch (error) {
     console.error("❌ Error adding asset:", error);
-    showToast(`Failed to add asset`);
+    showToast(`Failed to add asset`, "error");
   }
 });
 
@@ -199,9 +220,9 @@ if (!ok) return;
       });
 
       await refreshCustomList();
-      window.showToast("Deleted successfully!", "error");
+      window.showToast("Deleted successfully!", "success");
     } catch (err) {
       console.error(err);
-     showToast(`Error deleting asset type`);
+     showToast(`Error deleting asset type`, "error");
     }
   });

@@ -94,9 +94,5 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// Logout
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  auth.signOut().then(() => {
-    window.location.href = "login.html";
-  });
-});
+// Logout is handled globally by auth.js (the sidebar's "Logout" button
+// calls window.logout()); no page-specific logout wiring needed here.
