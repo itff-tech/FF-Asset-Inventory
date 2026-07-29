@@ -63,6 +63,46 @@ select:disabled,
   cursor: not-allowed;
 }
 
+/* === Table loading / empty states ===
+   Reusable across Asset Inventory, Asset Summary, and User Asset Overview
+   so a stalled fetch or a zero-result filter never just looks like a blank,
+   broken page. */
+.state-cell {
+  padding: 3rem 1rem;
+  text-align: center;
+}
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+}
+.spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--color-primary);
+  border-radius: 9999px;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.empty-state-icon {
+  font-size: 1.75rem;
+  color: #cbd5e1;
+  margin-bottom: 0.25rem;
+}
+.empty-state-title {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.empty-state-message {
+  font-size: 0.875rem;
+}
+
 /* === Backgrounds === */
 .bg-body {
   background-color: var(--color-bg);
