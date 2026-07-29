@@ -7,7 +7,37 @@ import { auth, db } from "../firebase-client.js";
 const summaryTableBody = document.getElementById("summaryTableBody");
 const typeFilter = document.getElementById("typeFilter");
 
+const SUMMARY_COLSPAN = 4;
+
+function renderLoadingRow() {
+  summaryTableBody.innerHTML = `
+    <tr>
+      <td colspan="${SUMMARY_COLSPAN}" class="state-cell">
+        <div class="loading-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading summary…</span>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderEmptyRow() {
+  summaryTableBody.innerHTML = `
+    <tr>
+      <td colspan="${SUMMARY_COLSPAN}" class="state-cell">
+        <div class="empty-state">
+          <i class="bi bi-box-seam empty-state-icon"></i>
+          <p class="empty-state-title">No assets yet</p>
+          <p class="empty-state-message">Add assets from the Add Asset page to see them summarized here.</p>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 function renderTable(filteredType = "all") {
+  renderLoadingRow();
   getDocs(collection(db, "assets")).then(snapshot => {
     const assets = snapshot.docs.map(doc => doc.data());
     const grouped = {};
@@ -27,6 +57,11 @@ function renderTable(filteredType = "all") {
     grouped[type].available += 1;
   }
     });
+
+    if (Object.keys(grouped).length === 0) {
+      renderEmptyRow();
+      return;
+    }
 
     // Clear table
     summaryTableBody.innerHTML = "";
