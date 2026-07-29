@@ -16,10 +16,52 @@ const usersPerPage = 25;
 let groupedUsers = {};
 
 async function loadUserAssets() {
+  renderLoadingRow();
   const snapshot = await getDocs(query(assetRef, where("AllocatedTo", "!=", "")));
   allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   renderUserTable(allAssets);
+}
+
+const USER_OVERVIEW_COLSPAN = 5;
+
+function renderLoadingRow() {
+  const tbody = document.getElementById("userAssetTableBody");
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="${USER_OVERVIEW_COLSPAN}" class="state-cell">
+        <div class="loading-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading allocations…</span>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderEmptyRow(isFiltered) {
+  const tbody = document.getElementById("userAssetTableBody");
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="${USER_OVERVIEW_COLSPAN}" class="state-cell">
+        <div class="empty-state">
+          <i class="bi ${isFiltered ? "bi-search" : "bi-people"} empty-state-icon"></i>
+          <p class="empty-state-title">${isFiltered ? "No matching users" : "No assets allocated"}</p>
+          <p class="empty-state-message">${
+            isFiltered
+              ? "Try a different search term."
+              : "Assets will show up here once they're allocated to someone."
+          }</p>
+        </div>
+      </td>
+    </tr>
+  `;
+  const pageIndicator = document.getElementById("pageIndicator");
+  const prevBtn = document.getElementById("prevPage");
+  const nextBtn = document.getElementById("nextPage");
+  if (pageIndicator) pageIndicator.textContent = "Page 0 of 0";
+  if (prevBtn) prevBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = true;
 }
 
 function renderUserTable(data) {
@@ -29,6 +71,11 @@ function renderUserTable(data) {
     if (!groupedUsers[user]) groupedUsers[user] = [];
     groupedUsers[user].push(asset);
   });
+
+  if (Object.keys(groupedUsers).length === 0) {
+    renderEmptyRow(allAssets.length > 0);
+    return;
+  }
 
   renderPaginatedUsers(currentPage);
 }
