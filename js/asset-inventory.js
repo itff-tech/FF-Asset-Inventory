@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 🔄 Load Assets
   async function loadAssets() {
+    renderLoadingRow();
     const snapshot = await getDocs(assetsCollection);
     allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderTable(allAssets);
@@ -85,8 +86,49 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable(filtered);
   }
 
+  const TABLE_COLSPAN = 10;
+
+  function renderLoadingRow() {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="${TABLE_COLSPAN}" class="state-cell">
+          <div class="loading-state">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Loading assets…</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    document.getElementById("pagination").innerHTML = "";
+  }
+
+  function renderEmptyRow(isFiltered) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="${TABLE_COLSPAN}" class="state-cell">
+          <div class="empty-state">
+            <i class="bi ${isFiltered ? "bi-search" : "bi-box-seam"} empty-state-icon"></i>
+            <p class="empty-state-title">${isFiltered ? "No matching assets" : "No assets yet"}</p>
+            <p class="empty-state-message">${
+              isFiltered
+                ? "Try adjusting your search or filters."
+                : "Add your first asset to get started."
+            }</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    document.getElementById("pagination").innerHTML = "";
+  }
+
   // 🖥️ Render assets with pagination
   function renderTable(data) {
+    if (data.length === 0) {
+      const isFiltered = allAssets.length > 0;
+      renderEmptyRow(isFiltered);
+      return;
+    }
+
     tableBody.innerHTML = "";
     const start = (currentPage - 1) * rowsPerPage;
     const paginatedData = data.slice(start, start + rowsPerPage);
