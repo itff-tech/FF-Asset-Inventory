@@ -6,12 +6,26 @@ const DEFAULTS = {
   type: "warning"
 };
 
+// If showConfirmModal() is called again while a previous call on the same
+// modal hasn't resolved yet (e.g. a double-click on the button that opens
+// it), force-close the earlier instance and clean up its listeners first.
+// Without this, the shared #confirmModal element ends up with two stacked
+// sets of click/keydown listeners, and a single click on "Confirm" fires
+// both of them — running whatever the caller does next (a Firestore write,
+// a toast, etc.) twice.
+let activeClose = null;
+
 export function showConfirmModal(options = {}) {
   const config = { ...DEFAULTS, ...options };
   const modal = document.getElementById("confirmModal");
   if (!modal) {
     console.error("[confirm-modal] #confirmModal not found in DOM");
     return Promise.resolve(false);
+  }
+
+  if (activeClose) {
+    activeClose(false);
+    activeClose = null;
   }
 
   const titleEl = modal.querySelector("[data-confirm-title]");
@@ -38,22 +52,34 @@ export function showConfirmModal(options = {}) {
       confirmBtn?.removeEventListener("click", onConfirm);
       cancelBtn?.removeEventListener("click", onCancel);
       modal.removeEventListener("click", onBackdrop);
-      document.removeEventListener("keydown", onEsc);
+      document.removeEventListener("keydown", onKeydown);
+      if (activeClose === close) activeClose = null;
       resolve(result);
     };
+    activeClose = close;
 
     const onConfirm = () => close(true);
     const onCancel = () => close(false);
     const onBackdrop = (event) => {
       if (event.target === modal) close(false);
     };
-    const onEsc = (event) => {
-      if (event.key === "Escape") close(false);
+    // Enter confirms, Escape cancels — matches the visible default action
+    // (the primary "Confirm" button) so keyboard-only users aren't forced
+    // to reach for the mouse.
+    const onKeydown = (event) => {
+      if (event.key === "Escape") {
+        close(false);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        close(true);
+      }
     };
 
     confirmBtn?.addEventListener("click", onConfirm);
     cancelBtn?.addEventListener("click", onCancel);
     modal.addEventListener("click", onBackdrop);
-    document.addEventListener("keydown", onEsc);
+    document.addEventListener("keydown", onKeydown);
+
+    confirmBtn?.focus();
   });
 }

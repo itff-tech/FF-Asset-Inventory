@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 // Allocate Asset function
 async function allocateAsset() {
+  const assignButton = document.getElementById("assignBtn");
   const assetDocId = document.getElementById("assetSelect").value;
   const userName = document.getElementById("userName").value;
   const allocationDate = document.getElementById("allocationDate").value;
@@ -65,6 +66,8 @@ async function allocateAsset() {
     type: "info"
   });
   if (!ok) return;
+
+  if (assignButton) assignButton.disabled = true;
 
   try {
     const assetRef = doc(db, "assets", assetDocId);
@@ -93,5 +96,6 @@ async function allocateAsset() {
   } catch (error) {
     console.error("Error allocating asset: ", error);
     window.showToast("❌ Error allocating asset.", "error");
+    if (assignButton) assignButton.disabled = false;
   }
 }
