@@ -21,10 +21,10 @@
    <aside class="sidebar bg-sidebar text-white w-36 shadow-md px-4 py-4">
     <h2 class="sidebar-title">FF Inventory</h2>
     <nav class="sidebar-nav">
-      <a href="add-asset.html" class="sidebar-link active"><i class="bi bi-plus-circle"></i> Add Asset</a>
+      <a href="add-asset.html" class="sidebar-link"><i class="bi bi-plus-circle"></i> Add Asset</a>
       <a href="allocate-asset.html" class="sidebar-link"><i class="bi bi-arrow-left-right"></i> Allocate Asset</a>
       <a href="asset-inventory.html" class="sidebar-link"><i class="bi bi-layers"></i> Asset Inventory</a>
-      <a href="user-asset-overview.html" class="sidebar-link"><i class="bi bi-people-fill"></i> User Asset Overview</a>
+      <a href="user-asset-overview.html" class="sidebar-link active"><i class="bi bi-people-fill"></i> User Asset Overview</a>
       <a href="asset-summary.html" class="sidebar-link"><i class="bi bi-bar-chart-line-fill"></i> Asset Summary</a>
     </nav>
    <button class="btn-logout mt-6 w-full" onclick="logout()">Logout</button>
@@ -90,6 +90,21 @@
 
    <!-- 🔐 Logout -->
   <script type="module" src="auth.js"></script>
-  
+
+  <!-- Reusable confirmation modal -->
+  <div id="confirmModal" class="confirm-modal hidden" aria-hidden="true">
+    <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="confirm-modal-icon" data-confirm-icon data-type="warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <h3 id="confirmModalTitle" class="confirm-modal-title" data-confirm-title>Confirm Action</h3>
+      <p class="confirm-modal-message" data-confirm-message>Are you sure you want to continue?</p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="btn-secondary" data-confirm-cancel>Cancel</button>
+        <button type="button" class="btn-primary" data-confirm-ok>Confirm</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -163,30 +163,37 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
   async function returnAsset(assetId) {
-    if (confirm("Mark this asset as Available?")) {
-      const assetRef = doc(db, "assets", assetId);
-      const assetSnap = await getDoc(assetRef);
-      const assetData = assetSnap.data();
+    const ok = await showConfirmModal({
+      title: "Return Asset",
+      message: "Mark this asset as Available? It will no longer be allocated to its current user.",
+      confirmText: "Return",
+      cancelText: "Cancel",
+      type: "warning"
+    });
+    if (!ok) return;
 
-      const updatedHistory = [
-        ...(assetData.history || []),
-        {
-          date: new Date().toISOString(),
-          action: "Returned",
-          details: `Returned by ${assetData.AllocatedTo || "Unknown"}`
-        }
-      ];
+    const assetRef = doc(db, "assets", assetId);
+    const assetSnap = await getDoc(assetRef);
+    const assetData = assetSnap.data();
 
-      await updateDoc(assetRef, {
-        status: "Available",
-        AllocatedTo: "",
-        allocationDate: "",
-        history: updatedHistory
-      });
+    const updatedHistory = [
+      ...(assetData.history || []),
+      {
+        date: new Date().toISOString(),
+        action: "Returned",
+        details: `Returned by ${assetData.AllocatedTo || "Unknown"}`
+      }
+    ];
 
-     window.showToast("Asset returned successfully!", "info");
-      loadAssets();
-    }
+    await updateDoc(assetRef, {
+      status: "Available",
+      AllocatedTo: "",
+      allocationDate: "",
+      history: updatedHistory
+    });
+
+    window.showToast("Asset returned successfully!", "success");
+    loadAssets();
   }
 
   function openEditModal() {
@@ -251,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
 
     if (!currentEditingAssetId || !currentEditingAssetData) {
-      alert("No asset selected for editing.");
+      window.showToast("No asset selected for editing.", "error");
       return;
     }
 
@@ -262,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const purchaseDate = document.getElementById("editPurchaseDate").value;
 
     if (!type || !model || !serialNumber || !purchaseDate) {
-      alert("Please fill all required fields (Type, Model, Serial Number, Purchase Date).");
+      window.showToast("Please fill all required fields (Type, Model, Serial Number, Purchase Date).", "error");
       return;
     }
 
@@ -279,13 +286,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Keep status in sync with Allocated To so the table badge never
+      // shows "Available" for an asset that's actually assigned to someone
+      // (or vice versa) just because the edit form only touched one field.
       const updatedData = {
         type,
         model,
         serialNumber,
         AllocatedTo: allocatedTo,
+        status: allocatedTo ? "Allocated" : "Available",
         purchaseDate
       };
+      if (!allocatedTo) {
+        updatedData.allocationDate = "";
+      }
 
       const details = formatEditDetails(currentEditingAssetData, updatedData);
       const updatedHistory = [

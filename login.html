@@ -11,11 +11,6 @@
 </head>
 <body class="bg-[#F3F4F6] flex items-center justify-center min-h-screen">
 
-<!-- ENV MARKER -->
-<div style="position:fixed;top:12px;right:12px;z-index:9999;background:#111827;color:#fff;padding:6px 10px;border-radius:9999px;font:12px/1.2 system-ui;">
-  REPO A • tejasgavli • TEST-01
-</div>  
-
   <div class="bg-white w-[350px] rounded-xl shadow-lg p-6">
     <!-- 🖼️ Logo -->
     <div class="flex justify-center mb-4">
@@ -24,57 +19,71 @@
 
     <h2 class="text-center text-xl font-semibold mb-4 text-gray-700">Admin Login</h2>
 
-    <!-- Email -->
-    <input id="email"
-           type="text"
-           placeholder="Email"
-           class="w-full border border-gray-300 rounded-md px-3 py-2 mb-3 focus:ring-[#0F766E] focus:border-[#0F766E]"/>
+    <form id="loginForm" novalidate>
+      <!-- Email -->
+      <input id="email"
+             type="text"
+             placeholder="Email"
+             autocomplete="username"
+             class="w-full border border-gray-300 rounded-md px-3 py-2 mb-3 focus:ring-[#0F766E] focus:border-[#0F766E]"/>
 
-    <!-- Password with toggle eye -->
-    <div class="relative mb-3">
-      <input id="password" type="password"
-             placeholder="Password"
-             class="w-full pr-10 border border-gray-300 rounded-md px-3 py-2 focus:ring-[#0F766E] focus:border-[#0F766E]"/>
+      <!-- Password with toggle eye -->
+      <div class="relative mb-3">
+        <input id="password" type="password"
+               placeholder="Password"
+               autocomplete="current-password"
+               class="w-full pr-10 border border-gray-300 rounded-md px-3 py-2 focus:ring-[#0F766E] focus:border-[#0F766E]"/>
 
-      <button id="togglePwd" type="button" class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-        <!-- eye open -->
-        <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M2.458 12C3.732 7.943 7.522 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S3.732 16.057 2.458 12z"/>
-        </svg>
-        <!-- eye off -->
-        <svg id="eyeOff" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.044 10.044 0 013.016-4.605m14.033.19A10.05 10.05 0 0121.542 12c-1.274 4.057-5.064 7-9.542 7a10.05 10.05 0 01-1.875-.175M15 12a3 3 0 11-6 0 3 3 0 016 0zm-9.9-5.1L4.2 4.2m15.6 15.6L19.8 19.8"/>
+        <button id="togglePwd" type="button" class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+          <!-- eye open -->
+          <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.522 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S3.732 16.057 2.458 12z"/>
+          </svg>
+          <!-- eye off -->
+          <svg id="eyeOff" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.044 10.044 0 013.016-4.605m14.033.19A10.05 10.05 0 0121.542 12c-1.274 4.057-5.064 7-9.542 7a10.05 10.05 0 01-1.875-.175M15 12a3 3 0 11-6 0 3 3 0 016 0zm-9.9-5.1L4.2 4.2m15.6 15.6L19.8 19.8"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Login button with spinner -->
+      <button id="loginBtn" type="submit"
+              class="w-full flex justify-center items-center gap-2 bg-[#0F766E] hover:bg-[#0c5e57] text-white rounded-md py-2 transition disabled:opacity-60 disabled:cursor-wait">
+        <span>Sign in</span>
+        <svg id="loader" class="animate-spin h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
         </svg>
       </button>
-    </div>
 
-    <!-- Login button with spinner -->
-    <button id="loginBtn"
-            class="w-full flex justify-center items-center gap-2 bg-[#0F766E] hover:bg-[#0c5e57] text-white rounded-md py-2 transition disabled:opacity-60 disabled:cursor-wait">
-      <span>Sign in</span>
-      <svg id="loader" class="animate-spin h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-      </svg>
-    </button>
-
-    <div id="error" class="text-red-500 text-sm mt-3 text-center hidden"></div>
+      <div id="error" class="text-red-500 text-sm mt-3 text-center hidden"></div>
+    </form>
   </div>
 
 <script type="module">
   import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { auth } from "./firebase-client.js";
+  const loginForm = document.getElementById("loginForm");
   const loginBtn = document.getElementById("loginBtn");
   const loader   = document.getElementById("loader");
   const errorDiv = document.getElementById("error");
 
-  loginBtn.addEventListener("click", () => {
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
+
+    errorDiv.classList.add("hidden");
+
+    if (!email || !password) {
+      errorDiv.textContent = "Please enter both email and password.";
+      errorDiv.classList.remove("hidden");
+      return;
+    }
 
     loader.classList.remove("hidden");
     loginBtn.disabled = true;

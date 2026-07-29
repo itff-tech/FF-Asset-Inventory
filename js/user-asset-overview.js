@@ -7,6 +7,7 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from "../firebase-client.js";
+import { showConfirmModal } from "./ui-confirm.js";
 const assetRef = collection(db, "assets");
 
 let allAssets = [];
@@ -82,8 +83,14 @@ function renderPaginatedUsers(page) {
 
 async function returnAllAssets(user) {
   const userAssets = allAssets.filter(asset => asset.AllocatedTo === user);
-  const confirmMsg = `Return all ${userAssets.length} asset(s) assigned to ${user}?`;
-  if (!confirm(confirmMsg)) return;
+  const ok = await showConfirmModal({
+    title: "Return All Assets",
+    message: `Return all ${userAssets.length} asset(s) assigned to ${user}?`,
+    confirmText: "Return All",
+    cancelText: "Cancel",
+    type: "warning"
+  });
+  if (!ok) return;
 
   for (let asset of userAssets) {
     await updateDoc(doc(db, "assets", asset.id), {
@@ -93,14 +100,21 @@ async function returnAllAssets(user) {
     });
   }
 
-  alert("All assets returned for " + user);
+  window.showToast(`All assets returned for ${user}`, "success");
   loadUserAssets();
 }
 
 window.returnAllAssets = returnAllAssets;
 
 async function returnSingleAsset(assetId) {
-  if (!confirm("Return this asset to inventory?")) return;
+  const ok = await showConfirmModal({
+    title: "Return Asset",
+    message: "Return this asset to inventory?",
+    confirmText: "Return",
+    cancelText: "Cancel",
+    type: "warning"
+  });
+  if (!ok) return;
 
   await updateDoc(doc(db, "assets", assetId), {
     status: "Available",
@@ -108,7 +122,7 @@ async function returnSingleAsset(assetId) {
     allocationDate: ""
   });
 
-  alert("Asset returned successfully.");
+  window.showToast("Asset returned successfully.", "success");
   loadUserAssets();
 }
 
