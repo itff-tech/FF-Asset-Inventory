@@ -58,6 +58,24 @@ function renderTable(filteredType = "all") {
   }
     });
 
+// KPI cards always reflect the overall totals (not the type filter),
+    // so they're a stable at-a-glance summary regardless of what's
+    // currently selected in the dropdown below.
+    const kpiTotal = document.getElementById("kpiTotal");
+    const kpiAvailable = document.getElementById("kpiAvailable");
+    const kpiAllocated = document.getElementById("kpiAllocated");
+    if (kpiTotal && kpiAvailable && kpiAllocated) {
+      let totalAvailable = 0;
+      let totalAllocated = 0;
+      Object.values(grouped).forEach(g => {
+        totalAvailable += g.available;
+        totalAllocated += g.allocated;
+      });
+      kpiTotal.textContent = assets.length;
+      kpiAvailable.textContent = totalAvailable;
+      kpiAllocated.textContent = totalAllocated;
+    }
+
     if (Object.keys(grouped).length === 0) {
       renderEmptyRow();
       return;
