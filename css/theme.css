@@ -63,6 +63,24 @@ select:disabled,
   cursor: not-allowed;
 }
 
+/* === Sortable table headers === */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.sortable-th:hover {
+  background-color: rgba(15, 118, 110, 0.08);
+}
+.sortable-th .sort-icon {
+  font-size: 0.7rem;
+  margin-left: 0.15rem;
+  color: #9CA3AF;
+}
+.sortable-th.sort-active .sort-icon {
+  color: var(--color-primary);
+}
+
 /* === Table loading / empty states ===
    Reusable across Asset Inventory, Asset Summary, and User Asset Overview
    so a stalled fetch or a zero-result filter never just looks like a blank,
