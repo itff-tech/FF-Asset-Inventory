@@ -23,20 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeEditModalBtn = document.getElementById("closeEditModal");
   const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
-  // Keep the table's sticky header positioned right below the frozen
-  // title+filters toolbar instead of overlapping it. Measured (not
-  // hardcoded) so it stays correct if the toolbar's content ever wraps
-  // to a second line.
-  const stickyToolbar = document.getElementById("stickyToolbar");
-  const inventoryThead = document.getElementById("inventoryThead");
-  function syncStickyOffset() {
-    if (stickyToolbar && inventoryThead) {
-      inventoryThead.style.top = `${stickyToolbar.offsetHeight}px`;
-    }
-  }
-  syncStickyOffset();
-  window.addEventListener("resize", syncStickyOffset);
-
   let sortKey = null;
   let sortDirection = "asc"; // "asc" | "desc"
 
