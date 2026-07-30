@@ -63,6 +63,22 @@ select:disabled,
   cursor: not-allowed;
 }
 
+/* === Table action icons ===
+   5 icon buttons (Edit, Allocate, Return, Delete, History) per row. Plain
+   inline-block buttons wrap one-per-line in a narrow cell; flex-wrap lets
+   them flow horizontally and wrap into centered rows instead (~3 over 2). */
+.action-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.6rem;
+}
+.action-cell button {
+  line-height: 1;
+  font-size: 1rem;
+}
+
 /* === Sortable table headers === */
 .sortable-th {
   cursor: pointer;
