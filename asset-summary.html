@@ -26,9 +26,36 @@
 
   <!-- Main Content -->
   <main class="flex-1 p-6 overflow-y-auto w-full">
-    <header class="mb-6">
+<header class="mb-6">
       <h1 class="text-3xl font-semibold text-gray-800">Asset Summary</h1>
     </header>
+
+    <!-- 📊 KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-total"><i class="bi bi-boxes"></i></div>
+        <div>
+          <div class="kpi-value" id="kpiTotal">—</div>
+          <div class="kpi-label">Total Assets</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-available"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="kpi-value" id="kpiAvailable">—</div>
+          <div class="kpi-label">Available</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-allocated"><i class="bi bi-person-check"></i></div>
+        <div>
+          <div class="kpi-value" id="kpiAllocated">—</div>
+          <div class="kpi-label">Allocated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
 
     <!-- Filters -->
     <div class="mb-4 flex flex-wrap gap-3 items-center">
