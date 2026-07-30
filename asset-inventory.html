@@ -1,178 +1,519 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asset Inventory | FinalFunnel Asset Manager</title>
-  <link rel="icon" type="image/png" href="assets/Finalfunel04.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  <link rel="stylesheet" href="css/theme.css" />
-</head>
-<body class="bg-body flex h-screen">
+// Firebase imports
+import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { showConfirmModal } from "./ui-confirm.js";
+import { db } from "../firebase-client.js";
+const assetsCollection = collection(db, "assets");
 
-  <!-- Global loader overlay -->
-<div id="loaderOverlay"
-     style="position:fixed; inset:0; background:rgba(255,255,255,0.6); display:flex; align-items:center; justify-content:center; z-index:9999; visibility:hidden;">
-  <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-[#0F766E] border-solid"></div>
-</div>
+let allAssets = [];
+let currentPage = 1;
+const rowsPerPage = 25;
 
-  <!-- Sidebar -->
-  <aside class="sidebar w-36 shadow-md px-4 py-4">
-    <h2 class="sidebar-title">FF Inventory</h2>
-    <nav class="sidebar-nav">
-      <a href="add-asset.html"><i class="bi bi-plus-circle"></i> Add Asset</a>
-      <a href="allocate-asset.html"><i class="bi bi-arrow-left-right"></i> Allocate Asset</a>
-      <a href="asset-inventory.html" class="active"><i class="bi bi-layers"></i> Asset Inventory</a>
-      <a href="user-asset-overview.html"><i class="bi bi-people-fill"></i> User Asset Overview</a>
-      <a href="asset-summary.html"><i class="bi bi-bar-chart-line-fill"></i> Asset Summary</a>
-    </nav>
-    <button class="btn-logout mt-6 w-full" onclick="logout()">Logout</button>
-  </aside>
+let currentEditingAssetId = null;
+let currentEditingAssetData = null;
 
-  <!-- Main Content -->
-  <main class="flex-1 p-6 overflow-y-auto w-full min-h-0">
-    <!-- Frozen toolbar: title + all filters stay pinned while the table scrolls beneath -->
-    <div id="stickyToolbar" class="sticky-toolbar">
-      <header class="mb-4">
-        <h1 class="page-title">Asset Inventory</h1>
-      </header>
+document.addEventListener("DOMContentLoaded", () => {
+  const tableBody = document.getElementById("tableBody");
+  const searchInput = document.getElementById("searchInput");
+  const statusFilter = document.getElementById("statusFilter");
+  const typeFilter = document.getElementById("typeFilter");
+  const resetBtn = document.getElementById("resetFilters");
 
-      <!-- Filters -->
-      <div class="flex flex-wrap gap-4 items-center">
-        <input type="text" id="searchInput" placeholder="Search by Asset ID or Model" class="form-input w-64">
-        <select id="statusFilter" class="border px-3 py-2 rounded w-48">
-          <option value="">All Statuses</option>
-          <option value="Available">Available</option>
-          <option value="Allocated">Allocated</option>
-        </select>
-        <select id="typeFilter" class="form-input w-48">
-          <option value="">All Types</option>
-          <option value="Laptop">Laptop</option>
-          <option value="Monitor">Monitor</option>
-          <option value="Keyboard">Keyboard</option>
-          <option value="Mouse">Mouse</option>
-          <option value="Headset">Headset</option>
-          <option value="Desktop">Desktop</option>
-        </select>
-        <button id="resetFilters" class="btn-secondary">Reset</button>
+  const editModal = document.getElementById("editAssetModal");
+  const editForm = document.getElementById("editAssetForm");
+  const closeEditModalBtn = document.getElementById("closeEditModal");
+  const cancelEditModalBtn = document.getElementById("cancelEditModal");
+
+  // Keep the table's sticky header positioned exactly below the frozen
+  // title+filters toolbar. A one-time measurement here would race against
+  // Tailwind's CDN styles finishing loading; ResizeObserver instead keeps
+  // this in sync continuously, however/whenever the toolbar's real size
+  // settles or changes.
+  const stickyToolbar = document.getElementById("stickyToolbar");
+  const inventoryThead = document.getElementById("inventoryThead");
+  if (stickyToolbar && inventoryThead) {
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(entries => {
+        for (const entry of entries) {
+          inventoryThead.style.top = `${entry.contentRect.height}px`;
+        }
+      }).observe(stickyToolbar);
+    } else {
+      // Very old browsers without ResizeObserver: best-effort fallback.
+      inventoryThead.style.top = `${stickyToolbar.offsetHeight}px`;
+    }
+  }
+
+  let sortKey = null;
+  let sortDirection = "asc"; // "asc" | "desc"
+
+  // 🔄 Load Assets
+  async function loadAssets() {
+    renderLoadingRow();
+    const snapshot = await getDocs(assetsCollection);
+    allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTable(sortAssets(getFilteredAssets()));
+
+    // Add filters if elements exist
+    if (searchInput && statusFilter && resetBtn) {
+      searchInput.addEventListener("input", applyFilters);
+      statusFilter.addEventListener("change", applyFilters);
+      typeFilter?.addEventListener("change", applyFilters);
+      resetBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        statusFilter.value = "";
+        if (typeFilter) typeFilter.value = "";
+        currentPage = 1;
+        renderTable(sortAssets(allAssets));
+      });
+    }
+
+    document.querySelectorAll(".sortable-th").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.sortKey;
+        if (sortKey === key) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortKey = key;
+          sortDirection = "asc";
+        }
+        updateSortIndicators();
+        currentPage = 1;
+        renderTable(sortAssets(getFilteredAssets()));
+      });
+    });
+  }
+
+  function updateSortIndicators() {
+    document.querySelectorAll(".sortable-th").forEach(th => {
+      const icon = th.querySelector(".sort-icon");
+      const isActive = th.dataset.sortKey === sortKey;
+      th.classList.toggle("sort-active", isActive);
+      if (!icon) return;
+      icon.className = isActive
+        ? `bi sort-icon ${sortDirection === "asc" ? "bi-arrow-up" : "bi-arrow-down"}`
+        : "bi bi-arrow-down-up sort-icon";
+    });
+  }
+
+  // Resolves the "Available"/"Allocated" status the same way the table
+  // renders it, so sorting by Status matches what's actually on screen
+  // even for rows where the status field itself is missing.
+  function resolveStatus(asset) {
+    return (
+      asset.status ||
+      asset.Status ||
+      ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available")
+    );
+  }
+
+  function sortAssets(data) {
+    if (!sortKey) return data;
+    const dir = sortDirection === "asc" ? 1 : -1;
+
+    return [...data].sort((a, b) => {
+      let valA, valB;
+      if (sortKey === "status") {
+        valA = resolveStatus(a);
+        valB = resolveStatus(b);
+      } else {
+        valA = a[sortKey];
+        valB = b[sortKey];
+      }
+      valA = (valA ?? "").toString().toLowerCase();
+      valB = (valB ?? "").toString().toLowerCase();
+
+      if (valA < valB) return -1 * dir;
+      if (valA > valB) return 1 * dir;
+      return 0;
+    });
+  }
+
+  // ✅ ADD THIS FUNCTION to load asset types into dropdown
+  async function loadAssetTypes() {
+    const typeSnapshot = await getDocs(collection(db, "assetTypes"));
+    const typeDropdown = document.getElementById("typeFilter");
+
+    // Clear existing options
+    typeDropdown.innerHTML = `<option value="">All Types</option>`;
+
+    typeSnapshot.forEach((doc) => {
+      const type = doc.data().name;
+      const option = document.createElement("option");
+      option.value = type.toLowerCase();
+      option.textContent = type;
+      typeDropdown.appendChild(option);
+    });
+  }
+
+  // 🔍 Filter assets
+  function getFilteredAssets() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const status = statusFilter.value.toLowerCase();
+    const type = typeFilter?.value.toLowerCase();
+
+    return allAssets.filter(asset => {
+      const matchesSearch =
+        asset.assetId?.toLowerCase().includes(searchTerm) ||
+        asset.model?.toLowerCase().includes(searchTerm) ||
+        asset.serialNumber?.toLowerCase().includes(searchTerm) ||
+        asset.type?.toLowerCase().includes(searchTerm) ||
+        asset.AllocatedTo?.toLowerCase().includes(searchTerm);
+
+      const matchesStatus = !status || asset.status?.toLowerCase() === status;
+      const matchesType = !type || asset.type?.toLowerCase() === type;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }
+
+  function applyFilters() {
+    currentPage = 1;
+    renderTable(sortAssets(getFilteredAssets()));
+  }
+
+  const TABLE_COLSPAN = 10;
+
+  function renderLoadingRow() {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="${TABLE_COLSPAN}" class="state-cell">
+          <div class="loading-state">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Loading assets…</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    document.getElementById("pagination").innerHTML = "";
+  }
+
+  function renderEmptyRow(isFiltered) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="${TABLE_COLSPAN}" class="state-cell">
+          <div class="empty-state">
+            <i class="bi ${isFiltered ? "bi-search" : "bi-box-seam"} empty-state-icon"></i>
+            <p class="empty-state-title">${isFiltered ? "No matching assets" : "No assets yet"}</p>
+            <p class="empty-state-message">${
+              isFiltered
+                ? "Try adjusting your search or filters."
+                : "Add your first asset to get started."
+            }</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    document.getElementById("pagination").innerHTML = "";
+  }
+
+  // 🖥️ Render assets with pagination
+  function renderTable(data) {
+    if (data.length === 0) {
+      const isFiltered = allAssets.length > 0;
+      renderEmptyRow(isFiltered);
+      return;
+    }
+
+    tableBody.innerHTML = "";
+    const start = (currentPage - 1) * rowsPerPage;
+    const paginatedData = data.slice(start, start + rowsPerPage);
+
+    paginatedData.forEach((asset, index) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+       <td class="border px-4 py-2 text-center">${start + index + 1}</td>
+        <td class="border px-4 py-2 text-center">${asset.assetId || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.type || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.model || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.serialNumber || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">${asset.AllocatedTo || "-"}</td>
+        <td class="border px-4 py-2 text-center">${asset.allocationDate || "-"}</td>
+        <td class="border px-4 py-2 text-center">${asset.purchaseDate || "N/A"}</td>
+        <td class="border px-4 py-2 text-center">
+  <span class="px-2 py-1 rounded text-white ${
+    ((asset.status || asset.Status || ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available")).toLowerCase() === "available")
+      ? "bg-green-500"
+      : "bg-red-500"
+  }">${
+    (asset.status || asset.Status || ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available"))
+  }</span>
+</td>
+        <td class="border px-2 py-2 text-center action-cell">
+          <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${asset.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
+          <button class="allocate-btn text-green-500 hover:text-green-700" data-assetid="${asset.assetId}" title="Allocate"><i class="bi bi-arrow-left-right"></i></button>
+          <button class="return-btn text-yellow-500 hover:text-yellow-700" data-id="${asset.id}" title="Return"><i class="bi bi-arrow-counterclockwise"></i></button>
+          <button class="delete-btn text-red-500 hover:text-red-700" data-id="${asset.id}" title="Delete"><i class="bi bi-trash"></i></button>
+          <button class="history-btn text-gray-600 hover:text-black" data-id="${asset.id}" title="History"><i class="bi bi-clock-history"></i></button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    renderPagination(data);
+    bindEvents();
+  }
+
+  function renderPagination(data) {
+    const pagination = document.getElementById("pagination");
+    const totalPages = Math.ceil(data.length / rowsPerPage);
+    pagination.innerHTML = `
+      <div class="flex justify-between items-center mt-4">
+        <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="bg-gray-300 px-3 py-1 rounded"' : 'class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"'}>Prev</button>
+        <span>Page ${currentPage} of ${totalPages}</span>
+        <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="bg-gray-300 px-3 py-1 rounded"' : 'class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"'}>Next</button>
       </div>
-    </div>
+    `;
+  }
 
-    <!-- Inventory Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
-      <table class="min-w-full table-auto text-sm">
-      <thead id="inventoryThead" class="bg-gray-200 text-gray-700 font-semibold sticky top-0 z-20">
-             <tr>
-              <th class="w-10 px-2 py-1 border">#</th>
-              <th class="w-22 px-2 py-1 border sortable-th" data-sort-key="assetId">Asset ID <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-24 px-2 py-1 border sortable-th" data-sort-key="type">Type <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-40 px-2 py-1 border sortable-th" data-sort-key="model">Model <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-40 px-2 py-1 border sortable-th" data-sort-key="serialNumber">Serial Number <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-35 px-2 py-1 border sortable-th" data-sort-key="AllocatedTo">Allocated To <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-30 px-2 py-1 border sortable-th" data-sort-key="allocationDate">Allocation Date <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-30 px-2 py-1 border sortable-th" data-sort-key="purchaseDate">Purchase Date <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-22 px-2 py-1 border sortable-th" data-sort-key="status">Status <i class="bi bi-arrow-down-up sort-icon"></i></th>
-              <th class="w-36 px-2 py-1 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="text-sm"></tbody>
-        </table>
+  window.goToPage = function (page) {
+    const data = sortAssets(getFilteredAssets());
+    const totalPages = Math.ceil(data.length / rowsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderTable(data);
+  };
 
-        <!-- ✅ Pagination Controls -->
-        <div id="pagination" class="mt-4 flex justify-between items-center text-sm"></div>
-      </div>
+  const deleteInFlight = new Set();
 
-    <!-- ✅ JS -->
-    <script type="module" src="js/asset-inventory.js"></script>
+  async function confirmDelete(assetId) {
+    if (deleteInFlight.has(assetId)) return;
 
-    <!-- ✏️ Edit Asset Modal -->
-<div id="editAssetModal" class="edit-modal-overlay hidden" aria-hidden="true">
-  <div class="edit-modal-card" role="dialog" aria-modal="true" aria-labelledby="editAssetModalTitle">
-    <div class="edit-modal-header">
-      <div>
-        <h3 id="editAssetModalTitle" class="edit-modal-title">Edit Asset</h3>
-        <p class="edit-modal-subtitle">Update asset details and save your changes.</p>
-      </div>
-      <button type="button" id="closeEditModal" class="edit-modal-icon-btn" aria-label="Close edit modal">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
+    const ok = await showConfirmModal({
+      title: "Delete Asset",
+      message: "Are you sure you want to delete this asset? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      type: "error"
+    });
 
-    <form id="editAssetForm" class="edit-modal-form">
-      <div class="edit-modal-grid">
-        <div class="edit-field-block">
-          <label for="editAssetId" class="form-label">Asset ID</label>
-          <input id="editAssetId" type="text" class="form-input edit-readonly-input" readonly />
-        </div>
+    if (!ok) return;
 
-        <div class="edit-field-block">
-          <label for="editType" class="form-label">Type *</label>
-          <input id="editType" type="text" class="form-input" required />
-        </div>
+    deleteInFlight.add(assetId);
+    try {
+      await deleteDoc(doc(db, "assets", assetId));
+      window.showToast("Asset deleted successfully!", "success");
+      loadAssets();
+    } finally {
+      deleteInFlight.delete(assetId);
+    }
+  }
 
-        <div class="edit-field-block">
-          <label for="editModel" class="form-label">Model *</label>
-          <input id="editModel" type="text" class="form-input" required />
-        </div>
+  async function returnAsset(assetId) {
+    const ok = await showConfirmModal({
+      title: "Return Asset",
+      message: "Mark this asset as Available? It will no longer be allocated to its current user.",
+      confirmText: "Return",
+      cancelText: "Cancel",
+      type: "warning"
+    });
+    if (!ok) return;
 
-        <div class="edit-field-block">
-          <label for="editSerialNumber" class="form-label">Serial Number *</label>
-          <input id="editSerialNumber" type="text" class="form-input" required />
-        </div>
+    const assetRef = doc(db, "assets", assetId);
+    const assetSnap = await getDoc(assetRef);
+    const assetData = assetSnap.data();
 
-        <div class="edit-field-block">
-          <label for="editAllocatedTo" class="form-label">Allocated To</label>
-          <input id="editAllocatedTo" type="text" class="form-input" />
-        </div>
+    const updatedHistory = [
+      ...(assetData.history || []),
+      {
+        date: new Date().toISOString(),
+        action: "Returned",
+        details: `Returned by ${assetData.AllocatedTo || "Unknown"}`
+      }
+    ];
 
-        <div class="edit-field-block">
-          <label for="editPurchaseDate" class="form-label">Purchase Date *</label>
-          <input id="editPurchaseDate" type="date" class="form-input" required />
-        </div>
-      </div>
+    await updateDoc(assetRef, {
+      status: "Available",
+      AllocatedTo: "",
+      allocationDate: "",
+      history: updatedHistory
+    });
 
-      <div class="edit-modal-footer">
-        <button type="button" id="cancelEditModal" class="btn-secondary">Cancel</button>
-        <button type="submit" class="btn-primary">Save Changes</button>
-      </div>
-    </form>
-  </div>
-</div>
-    
-    <!-- 🔍 History Modal -->
-    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-      <div class="bg-white p-6 rounded w-[90%] max-w-md max-h-[80vh] overflow-y-auto">
-        <h3 class="text-lg font-bold mb-4">Asset History</h3>
-        <ul id="historyList" class="space-y-2 text-sm"></ul>
-        <div class="text-right mt-4">
-          <button onclick="document.getElementById('historyModal').classList.add('hidden')" class="btn-secondary">Close</button>
-        </div>
-      </div>
-    </div>
-  </main>
+    window.showToast("Asset returned successfully!", "success");
+    loadAssets();
+  }
 
-<!-- Toast Container -->
-<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+  function openEditModal() {
+    editModal.classList.remove("hidden");
+  }
 
-  <script src="js/ui-toast.js"></script>
-    <!--Logout Fun-->
-  <script type="module" src="auth.js"></script>
+  function closeEditModal() {
+    editModal.classList.add("hidden");
+    editForm.reset();
+    currentEditingAssetId = null;
+    currentEditingAssetData = null;
+  }
 
-  <!-- Reusable confirmation modal -->
-<div id="confirmModal" class="confirm-modal hidden" aria-hidden="true">
-  <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-    <div class="confirm-modal-icon" data-confirm-icon data-type="warning">
-      <i class="bi bi-exclamation-triangle-fill"></i>
-    </div>
-    <h3 id="confirmModalTitle" class="confirm-modal-title" data-confirm-title>Confirm Action</h3>
-    <p class="confirm-modal-message" data-confirm-message>Are you sure you want to continue?</p>
-    <div class="confirm-modal-actions">
-      <button type="button" class="btn-secondary" data-confirm-cancel>Cancel</button>
-      <button type="button" class="btn-primary" data-confirm-ok>Confirm</button>
-    </div>
-  </div>
-</div>
-  
-</body>
-</html>
+  function formatEditDetails(before, after) {
+  const changes = [];
+
+  const appendIfChanged = (label, oldValue, newValue) => {
+    const oldText = (oldValue ?? "").toString().trim();
+    const newText = (newValue ?? "").toString().trim();
+    if (oldText !== newText) {
+      changes.push(`${label}: ${oldText || "-"} → ${newText || "-"}`);
+    }
+  };
+
+  appendIfChanged("Type", before.type, after.type);
+  appendIfChanged("Model", before.model, after.model);
+  appendIfChanged("Serial Number", before.serialNumber, after.serialNumber);
+  appendIfChanged("Allocated To", before.AllocatedTo, after.AllocatedTo);
+  appendIfChanged("Purchase Date", before.purchaseDate, after.purchaseDate);
+
+  return changes.length > 0 ? changes.join("; ") : "No field changes";
+}
+
+  async function editAsset(assetId) {
+    try {
+      const assetDoc = await getDoc(doc(db, "assets", assetId));
+
+      if (!assetDoc.exists()) {
+        window.showToast("Asset not found", "warning")
+        return;
+      }
+
+      const assetData = assetDoc.data();
+      currentEditingAssetId = assetId;
+      currentEditingAssetData = assetData;
+
+      document.getElementById("editAssetId").value = assetData.assetId || "";
+      document.getElementById("editType").value = assetData.type || "";
+      document.getElementById("editModel").value = assetData.model || "";
+      document.getElementById("editSerialNumber").value = assetData.serialNumber || "";
+      document.getElementById("editAllocatedTo").value = assetData.AllocatedTo || "";
+      document.getElementById("editPurchaseDate").value = assetData.purchaseDate || "";
+
+      openEditModal();
+    } catch (error) {
+      console.error("Error loading asset for edit:", error);
+      window.showToast("Failed to load asset details for edit", "error")
+    }
+  }
+
+  async function saveEditedAsset(event) {
+    event.preventDefault();
+
+    if (!currentEditingAssetId || !currentEditingAssetData) {
+      window.showToast("No asset selected for editing.", "error");
+      return;
+    }
+
+    const type = document.getElementById("editType").value.trim();
+    const model = document.getElementById("editModel").value.trim();
+    const serialNumber = document.getElementById("editSerialNumber").value.trim();
+    const allocatedTo = document.getElementById("editAllocatedTo").value.trim();
+    const purchaseDate = document.getElementById("editPurchaseDate").value;
+
+    if (!type || !model || !serialNumber || !purchaseDate) {
+      window.showToast("Please fill all required fields (Type, Model, Serial Number, Purchase Date).", "error");
+      return;
+    }
+
+    try {
+      const duplicateQuery = query(
+        assetsCollection,
+        where("serialNumber", "==", serialNumber)
+      );
+      const duplicateSnapshot = await getDocs(duplicateQuery);
+      const hasDuplicate = duplicateSnapshot.docs.some(d => d.id !== currentEditingAssetId);
+
+      if (hasDuplicate) {
+        window.showToast("Serial Number already exists for another asset", "error")
+        return;
+      }
+
+      // Keep status in sync with Allocated To so the table badge never
+      // shows "Available" for an asset that's actually assigned to someone
+      // (or vice versa) just because the edit form only touched one field.
+      const updatedData = {
+        type,
+        model,
+        serialNumber,
+        AllocatedTo: allocatedTo,
+        status: allocatedTo ? "Allocated" : "Available",
+        purchaseDate
+      };
+      if (!allocatedTo) {
+        updatedData.allocationDate = "";
+      }
+
+      const details = formatEditDetails(currentEditingAssetData, updatedData);
+      const updatedHistory = [
+        ...(currentEditingAssetData.history || []),
+        {
+          date: new Date().toISOString(),
+          action: "Asset Edited",
+          details
+        }
+      ];
+
+      await updateDoc(doc(db, "assets", currentEditingAssetId), {
+        ...updatedData,
+        history: updatedHistory
+      });
+
+      window.showToast("Asset updated successfully!", "success")
+      closeEditModal();
+      loadAssets();
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      window.showToast("Failed to update asset", "error")
+    }
+  }
+
+  function bindEvents() {
+    document.querySelectorAll(".edit-btn").forEach(btn =>
+      btn.addEventListener("click", () => editAsset(btn.dataset.id))
+    );
+    document.querySelectorAll(".allocate-btn").forEach(btn =>
+      btn.addEventListener("click", () => openAllocateModal(btn.dataset.assetid))
+    );
+    document.querySelectorAll(".return-btn").forEach(btn =>
+      btn.addEventListener("click", () => returnAsset(btn.dataset.id))
+    );
+    document.querySelectorAll(".delete-btn").forEach(btn =>
+      btn.addEventListener("click", () => confirmDelete(btn.dataset.id))
+    );
+    document.querySelectorAll(".history-btn").forEach(btn =>
+      btn.addEventListener("click", () => viewHistory(btn.dataset.id))
+    );
+  }
+
+  async function viewHistory(assetId) {
+    const assetDoc = await getDoc(doc(db, "assets", assetId));
+    const asset = assetDoc.data();
+    const history = asset.history || [];
+
+    const historyList = document.getElementById("historyList");
+    historyList.innerHTML = "";
+
+    if (history.length === 0) {
+      historyList.innerHTML = `<li class="text-gray-500">No history available for this asset.</li>`;
+    } else {
+      history.forEach(entry => {
+  const li = document.createElement("li");
+  li.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.action}${entry.details ? ` — ${entry.details}` : ""}`;
+  historyList.appendChild(li);
+});
+    }
+
+    document.getElementById("historyModal").classList.remove("hidden");
+  }
+
+  closeEditModalBtn?.addEventListener("click", closeEditModal);
+  cancelEditModalBtn?.addEventListener("click", closeEditModal);
+  editForm?.addEventListener("submit", saveEditedAsset);
+
+  window.confirmDelete = confirmDelete;
+  window.returnAsset = returnAsset;
+  window.editAsset = editAsset;
+  window.viewHistory = viewHistory;
+  window.openAllocateModal = (assetId) => {
+    window.location.href = `allocate-asset.html?assetId=${assetId}`;
+  };
+
+  // 🔃 Initial Load
+  loadAssets();
+  loadAssetTypes(); // ✅ Call it here
+});
