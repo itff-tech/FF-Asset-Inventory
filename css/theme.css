@@ -63,6 +63,21 @@ select:disabled,
   cursor: not-allowed;
 }
 
+/* === Frozen page toolbar (title + filters) ===
+   Sits above the table's own sticky thead. JS uses a ResizeObserver to
+   keep the thead's `top` continuously matched to this toolbar's actual
+   rendered height, so the two never overlap regardless of when styles
+   finish applying or if the toolbar's height ever changes. */
+.sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--color-bg);
+  padding-top: 0.25rem;
+  padding-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
 /* === Table action icons ===
    5 icon buttons (Edit, Allocate, Return, Delete, History) per row. Plain
    inline-block buttons wrap one-per-line in a narrow cell; flex-wrap lets
