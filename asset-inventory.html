@@ -32,34 +32,37 @@
 
   <!-- Main Content -->
   <main class="flex-1 p-6 overflow-y-auto w-full min-h-0">
-    <header class="mb-6">
-      <h1 class="page-title">Asset Inventory</h1>
-    </header>
+    <!-- Frozen toolbar: title + all filters stay pinned while the table scrolls beneath -->
+    <div id="stickyToolbar" class="sticky-toolbar">
+      <header class="mb-4">
+        <h1 class="page-title">Asset Inventory</h1>
+      </header>
 
-    <!-- Filters -->
-    <div class="flex flex-wrap gap-4 mb-4 items-center">
-      <input type="text" id="searchInput" placeholder="Search by Asset ID or Model" class="form-input w-64">
-      <select id="statusFilter" class="border px-3 py-2 rounded w-48">
-        <option value="">All Statuses</option>
-        <option value="Available">Available</option>
-        <option value="Allocated">Allocated</option>
-      </select>
-      <select id="typeFilter" class="form-input w-48">
-        <option value="">All Types</option>
-        <option value="Laptop">Laptop</option>
-        <option value="Monitor">Monitor</option>
-        <option value="Keyboard">Keyboard</option>
-        <option value="Mouse">Mouse</option>
-        <option value="Headset">Headset</option>
-        <option value="Desktop">Desktop</option>
-      </select>
-      <button id="resetFilters" class="btn-secondary">Reset</button>
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-4 items-center">
+        <input type="text" id="searchInput" placeholder="Search by Asset ID or Model" class="form-input w-64">
+        <select id="statusFilter" class="border px-3 py-2 rounded w-48">
+          <option value="">All Statuses</option>
+          <option value="Available">Available</option>
+          <option value="Allocated">Allocated</option>
+        </select>
+        <select id="typeFilter" class="form-input w-48">
+          <option value="">All Types</option>
+          <option value="Laptop">Laptop</option>
+          <option value="Monitor">Monitor</option>
+          <option value="Keyboard">Keyboard</option>
+          <option value="Mouse">Mouse</option>
+          <option value="Headset">Headset</option>
+          <option value="Desktop">Desktop</option>
+        </select>
+        <button id="resetFilters" class="btn-secondary">Reset</button>
+      </div>
     </div>
 
     <!-- Inventory Table -->
     <div class="bg-white rounded-lg shadow-md overflow-x-auto">
       <table class="min-w-full table-auto text-sm">
-      <thead class="bg-gray-200 text-gray-700 font-semibold sticky top-0 z-20">
+      <thead id="inventoryThead" class="bg-gray-200 text-gray-700 font-semibold sticky top-0 z-20">
              <tr>
               <th class="w-10 px-2 py-1 border">#</th>
               <th class="w-22 px-2 py-1 border sortable-th" data-sort-key="assetId">Asset ID <i class="bi bi-arrow-down-up sort-icon"></i></th>
