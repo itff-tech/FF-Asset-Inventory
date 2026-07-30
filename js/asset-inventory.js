@@ -23,6 +23,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeEditModalBtn = document.getElementById("closeEditModal");
   const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
+  // Keep the table's sticky header positioned exactly below the frozen
+  // title+filters toolbar. A one-time measurement here would race against
+  // Tailwind's CDN styles finishing loading; ResizeObserver instead keeps
+  // this in sync continuously, however/whenever the toolbar's real size
+  // settles or changes.
+  const stickyToolbar = document.getElementById("stickyToolbar");
+  const inventoryThead = document.getElementById("inventoryThead");
+  if (stickyToolbar && inventoryThead) {
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(entries => {
+        for (const entry of entries) {
+          inventoryThead.style.top = `${entry.contentRect.height}px`;
+        }
+      }).observe(stickyToolbar);
+    } else {
+      // Very old browsers without ResizeObserver: best-effort fallback.
+      inventoryThead.style.top = `${stickyToolbar.offsetHeight}px`;
+    }
+  }
+
   let sortKey = null;
   let sortDirection = "asc"; // "asc" | "desc"
 
