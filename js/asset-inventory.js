@@ -23,12 +23,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeEditModalBtn = document.getElementById("closeEditModal");
   const cancelEditModalBtn = document.getElementById("cancelEditModal");
 
+  let sortKey = null;
+  let sortDirection = "asc"; // "asc" | "desc"
+
   // 🔄 Load Assets
   async function loadAssets() {
     renderLoadingRow();
     const snapshot = await getDocs(assetsCollection);
     allAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderTable(allAssets);
+    renderTable(sortAssets(getFilteredAssets()));
 
     // Add filters if elements exist
     if (searchInput && statusFilter && resetBtn) {
@@ -40,9 +43,69 @@ document.addEventListener("DOMContentLoaded", () => {
         statusFilter.value = "";
         if (typeFilter) typeFilter.value = "";
         currentPage = 1;
-        renderTable(allAssets);
+        renderTable(sortAssets(allAssets));
       });
     }
+
+    document.querySelectorAll(".sortable-th").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.sortKey;
+        if (sortKey === key) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortKey = key;
+          sortDirection = "asc";
+        }
+        updateSortIndicators();
+        currentPage = 1;
+        renderTable(sortAssets(getFilteredAssets()));
+      });
+    });
+  }
+
+  function updateSortIndicators() {
+    document.querySelectorAll(".sortable-th").forEach(th => {
+      const icon = th.querySelector(".sort-icon");
+      const isActive = th.dataset.sortKey === sortKey;
+      th.classList.toggle("sort-active", isActive);
+      if (!icon) return;
+      icon.className = isActive
+        ? `bi sort-icon ${sortDirection === "asc" ? "bi-arrow-up" : "bi-arrow-down"}`
+        : "bi bi-arrow-down-up sort-icon";
+    });
+  }
+
+  // Resolves the "Available"/"Allocated" status the same way the table
+  // renders it, so sorting by Status matches what's actually on screen
+  // even for rows where the status field itself is missing.
+  function resolveStatus(asset) {
+    return (
+      asset.status ||
+      asset.Status ||
+      ((asset.AllocatedTo || asset.allocatedTo) ? "Allocated" : "Available")
+    );
+  }
+
+  function sortAssets(data) {
+    if (!sortKey) return data;
+    const dir = sortDirection === "asc" ? 1 : -1;
+
+    return [...data].sort((a, b) => {
+      let valA, valB;
+      if (sortKey === "status") {
+        valA = resolveStatus(a);
+        valB = resolveStatus(b);
+      } else {
+        valA = a[sortKey];
+        valB = b[sortKey];
+      }
+      valA = (valA ?? "").toString().toLowerCase();
+      valB = (valB ?? "").toString().toLowerCase();
+
+      if (valA < valB) return -1 * dir;
+      if (valA > valB) return 1 * dir;
+      return 0;
+    });
   }
 
   // ✅ ADD THIS FUNCTION to load asset types into dropdown
@@ -63,12 +126,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 🔍 Filter assets
-  function applyFilters() {
+  function getFilteredAssets() {
     const searchTerm = searchInput.value.toLowerCase();
     const status = statusFilter.value.toLowerCase();
     const type = typeFilter?.value.toLowerCase();
 
-    const filtered = allAssets.filter(asset => {
+    return allAssets.filter(asset => {
       const matchesSearch =
         asset.assetId?.toLowerCase().includes(searchTerm) ||
         asset.model?.toLowerCase().includes(searchTerm) ||
@@ -81,9 +144,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return matchesSearch && matchesStatus && matchesType;
     });
+  }
 
+  function applyFilters() {
     currentPage = 1;
-    renderTable(filtered);
+    renderTable(sortAssets(getFilteredAssets()));
   }
 
   const TABLE_COLSPAN = 10;
@@ -182,10 +247,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.goToPage = function (page) {
-    const totalPages = Math.ceil(allAssets.length / rowsPerPage);
+    const data = sortAssets(getFilteredAssets());
+    const totalPages = Math.ceil(data.length / rowsPerPage);
     if (page < 1 || page > totalPages) return;
     currentPage = page;
-    renderTable(allAssets);
+    renderTable(data);
   };
 
   const deleteInFlight = new Set();
